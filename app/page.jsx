@@ -5,11 +5,11 @@ import { useEffect, useState } from "react";
 const GRID_SIZE = 10;
 const COLUMNS = "ABCDEFGHIJ";
 const FLEET = [
-  { id: "carrier", name: "Carrier", length: 5, shortName: "CV" },
-  { id: "battleship", name: "Battleship", length: 4, shortName: "BB" },
-  { id: "cruiser", name: "Cruiser", length: 3, shortName: "CA" },
-  { id: "submarine", name: "Submarine", length: 3, shortName: "SS" },
-  { id: "destroyer", name: "Destroyer", length: 2, shortName: "DD" },
+  { id: "carrier", name: "Alpha", length: 5, shortName: "CV" },
+  { id: "battleship", name: "Bravo", length: 4, shortName: "BB" },
+  { id: "cruiser", name: "Charlie", length: 3, shortName: "CA" },
+  { id: "submarine", name: "Delta", length: 3, shortName: "SS" },
+  { id: "destroyer", name: "Echo", length: 2, shortName: "DD" },
 ];
 
 function coordinateKey({ x, y }) {
@@ -54,6 +54,7 @@ function createGame() {
     enemyShips: createFleet(),
     playerShots: [],
     computerShots: [],
+    computerIntel: { sunkShipLengths: [], sunkHitCells: [] },
     phase: "placement",
     selectedShipId: FLEET[0].id,
     placementOrientation: "horizontal",
@@ -178,6 +179,127 @@ function isShipSunk(ship, shots) {
   return ship.cells.every((cell) => getShot(shots, cell.x, cell.y)?.result === "hit");
 }
 
+function getCertainSunkHitCells(shots, target, length, knownSunkHitCells) {
+  const alreadySunk = new Set(knownSunkHitCells.map(coordinateKey));
+  const possibleSegments = [];
+
+  for (const orientation of ["horizontal", "vertical"]) {
+    for (let offset = 0; offset < length; offset += 1) {
+      const start = {
+        x: target.x - (orientation === "horizontal" ? offset : 0),
+        y: target.y - (orientation === "vertical" ? offset : 0),
+      };
+      const cells = Array.from({ length }, (_, index) => ({
+        x: start.x + (orientation === "horizontal" ? index : 0),
+        y: start.y + (orientation === "vertical" ? index : 0),
+      }));
+      const containsTarget = cells.some((cell) => cell.x === target.x && cell.y === target.y);
+      const inBounds = cells.every((cell) => (
+        cell.x >= 0 && cell.x < GRID_SIZE && cell.y >= 0 && cell.y < GRID_SIZE
+      ));
+      const allHit = cells.every((cell) => (
+        !alreadySunk.has(coordinateKey(cell)) && getShot(shots, cell.x, cell.y)?.result === "hit"
+      ));
+
+      if (containsTarget && inBounds && allHit) possibleSegments.push(cells);
+    }
+  }
+
+  const certainCells = possibleSegments.length > 0
+    ? possibleSegments[0].filter((cell) => possibleSegments.every((segment) => (
+      segment.some((candidate) => candidate.x === cell.x && candidate.y === cell.y)
+    )))
+    : [];
+  const result = new Map(knownSunkHitCells.map((cell) => [coordinateKey(cell), cell]));
+  result.set(coordinateKey(target), target);
+  for (const cell of certainCells) result.set(coordinateKey(cell), cell);
+  return [...result.values()];
+}
+
+function getShipPlacements(length) {
+  const placements = [];
+
+  for (const orientation of ["horizontal", "vertical"]) {
+    const maxX = orientation === "horizontal" ? GRID_SIZE - length : GRID_SIZE - 1;
+    const maxY = orientation === "vertical" ? GRID_SIZE - length : GRID_SIZE - 1;
+
+    for (let y = 0; y <= maxY; y += 1) {
+      for (let x = 0; x <= maxX; x += 1) {
+        placements.push(Array.from({ length }, (_, index) => ({
+          x: x + (orientation === "horizontal" ? index : 0),
+          y: y + (orientation === "vertical" ? index : 0),
+        })));
+      }
+    }
+  }
+
+  return placements;
+}
+
+function chooseSpreadOut(options, shots) {
+  if (options.length <= 1 || shots.length === 0) {
+    return options[Math.floor(Math.random() * options.length)];
+  }
+
+  const scoredOptions = options.map((cell) => ({
+    ...cell,
+    nearestShotDistance: Math.min(...shots.map((shot) => (
+      (cell.x - shot.x) ** 2 + (cell.y - shot.y) ** 2
+    ))),
+  }));
+  const greatestDistance = Math.max(...scoredOptions.map((cell) => cell.nearestShotDistance));
+  const spreadOptions = scoredOptions.filter((cell) => cell.nearestShotDistance >= greatestDistance * 0.7);
+
+  return spreadOptions[Math.floor(Math.random() * spreadOptions.length)];
+}
+
+function chooseComputerTarget(game) {
+  const options = [];
+  const shotResults = new Map(game.computerShots.map((shot) => [coordinateKey(shot), shot.result]));
+  const sunkHitCells = new Set(game.computerIntel.sunkHitCells.map(coordinateKey));
+  const unresolvedHits = game.computerShots.filter((shot) => (
+    shot.result === "hit" && !sunkHitCells.has(coordinateKey(shot))
+  ));
+  const remainingLengths = FLEET.map((ship) => ship.length);
+
+  for (const sunkLength of game.computerIntel.sunkShipLengths) {
+    const sunkIndex = remainingLengths.indexOf(sunkLength);
+    if (sunkIndex >= 0) remainingLengths.splice(sunkIndex, 1);
+  }
+
+  for (let y = 0; y < GRID_SIZE; y += 1) {
+    for (let x = 0; x < GRID_SIZE; x += 1) {
+      if (!shotResults.has(coordinateKey({ x, y }))) options.push({ x, y });
+    }
+  }
+
+  if (options.length === 0) return undefined;
+
+  const scores = new Map(options.map((cell) => [coordinateKey(cell), 0]));
+  const misses = new Set(game.computerShots.filter((shot) => shot.result === "miss").map(coordinateKey));
+  const forbiddenCells = new Set([...misses, ...sunkHitCells]);
+
+  for (const length of remainingLengths) {
+    for (const placement of getShipPlacements(length)) {
+      if (placement.some((cell) => forbiddenCells.has(coordinateKey(cell)))) continue;
+      if (unresolvedHits.length > 0 && !placement.some((cell) => (
+        unresolvedHits.some((hit) => hit.x === cell.x && hit.y === cell.y)
+      ))) continue;
+
+      for (const cell of placement) {
+        const key = coordinateKey(cell);
+        if (scores.has(key)) scores.set(key, scores.get(key) + 1);
+      }
+    }
+  }
+
+  const highestScore = Math.max(...scores.values());
+  if (highestScore === 0) return chooseSpreadOut(options, game.computerShots);
+
+  const likelyOptions = options.filter((cell) => scores.get(coordinateKey(cell)) >= highestScore * 0.75);
+  return chooseSpreadOut(likelyOptions, game.computerShots);
+}
+
 function fireShot(game, target, side) {
   const isPlayer = side === "player";
   const shots = isPlayer ? game.playerShots : game.computerShots;
@@ -200,10 +322,22 @@ function fireShot(game, target, side) {
         ? `${isPlayer ? "Direct hit" : "Incoming hit"} at ${location}.`
         : `${isPlayer ? "Splash" : "Enemy splash"} at ${location}.`;
   const logLine = `${isPlayer ? "YOU" : "CPU"}  ${location}  /  ${sunk ? `${targetShip.name.toUpperCase()} SUNK` : result.toUpperCase()}`;
+  const computerIntel = !isPlayer && sunk
+    ? {
+      sunkShipLengths: [...game.computerIntel.sunkShipLengths, targetShip.length],
+      sunkHitCells: getCertainSunkHitCells(
+        updatedShots,
+        target,
+        targetShip.length,
+        game.computerIntel.sunkHitCells,
+      ),
+    }
+    : game.computerIntel;
 
   return {
     ...game,
     [isPlayer ? "playerShots" : "computerShots"]: updatedShots,
+    computerIntel,
     phase: nextPhase,
     message,
     history: [...game.history, { id: `${side}-${updatedShots.length}`, text: logLine, type: result }],
@@ -226,7 +360,6 @@ function FleetStatus({ ships, shots, label, showDamage = true }) {
 
           return (
             <div className={`fleet-row ${sunk ? "fleet-row-sunk" : ""}`} key={ship.id}>
-              <span className="fleet-code">{ship.shortName}</span>
               <span className="fleet-name">{ship.name}</span>
               <span className="fleet-health" aria-label={`${ship.length - hits} of ${ship.length} segments intact`}>
                 {ship.cells.map((cell, index) => (
@@ -378,12 +511,11 @@ function Board({
   ships,
   shots,
   isTarget,
+  revealShips = false,
   disabled,
   onFire,
   count,
   countValue,
-  stateLabel,
-  coordinateNote,
   placement = false,
   selectedShip,
   orientation,
@@ -420,7 +552,7 @@ function Board({
   const previewShips = draggedShip ? ships.filter((ship) => ship.id !== draggedShip.shipId) : ships;
   const previewValid = preview.length > 0 && canPlaceShip(previewShips, preview);
   const visibleSilhouetteShips = isTarget
-    ? ships.filter((ship) => isShipSunk(ship, shots))
+    ? (revealShips ? ships : ships.filter((ship) => isShipSunk(ship, shots)))
     : ships;
 
   return (
@@ -467,6 +599,7 @@ function Board({
             ships={ships}
             shots={shots}
             isTarget={isTarget}
+            revealShips={revealShips}
             disabled={disabled}
             onFire={onFire}
             placement={placement}
@@ -487,10 +620,6 @@ function Board({
 
       </div>
 
-      <div className="board-card-foot">
-        <span className="board-state"><i className={`state-light ${(isTarget || placement) && !disabled ? "state-light-active" : ""}`} />{stateLabel}</span>
-        <span className="board-coordinate-note">10 × 10 GRID <b>·</b> {coordinateNote ?? (isTarget ? "RADAR SWEEP" : "FRIENDLY WATERS")}</span>
-      </div>
     </section>
   );
 }
@@ -500,6 +629,7 @@ function BoardRow({
   ships,
   shots,
   isTarget,
+  revealShips,
   disabled,
   onFire,
   placement,
@@ -535,7 +665,7 @@ function BoardRow({
         const isPreview = placement && previewKeys.has(coordinateKey({ x, y }));
         if (placement) classes.push("cell-placement");
         if (isPreview) classes.push(previewValid ? "cell-preview" : "cell-preview-invalid");
-        const label = `${coordinateName({ x, y })}${shot ? `, ${shot.result}` : ship ? ", friendly ship" : ", unmarked"}`;
+        const label = `${coordinateName({ x, y })}${shot ? `, ${shot.result}` : ship ? ", friendly ship" : ", unmarked"}${isTarget && revealShips && underlyingShip ? `, ${underlyingShip.name}` : ""}`;
         const contents = shot
           ? <span className={`sonar-mark ${shot.result === "hit" ? "mark-hit" : "mark-miss"}`} />
           : null;
@@ -606,10 +736,34 @@ function BoardRow({
 export default function Home() {
   const [game, setGame] = useState(null);
   const [draggedShip, setDraggedShip] = useState(null);
+  const [themePreference, setThemePreference] = useState("system");
 
   useEffect(() => {
     setGame(createGame());
   }, []);
+
+  useEffect(() => {
+    try {
+      const savedPreference = window.localStorage.getItem("sink-em-theme");
+      if (["light", "dark", "system"].includes(savedPreference)) setThemePreference(savedPreference);
+    } catch {
+      // Keep the system theme when browser storage is unavailable.
+    }
+  }, []);
+
+  useEffect(() => {
+    const systemPreference = window.matchMedia("(prefers-color-scheme: light)");
+    const applyTheme = () => {
+      document.documentElement.dataset.theme = themePreference === "system"
+        ? (systemPreference.matches ? "light" : "dark")
+        : themePreference;
+    };
+
+    applyTheme();
+    if (themePreference !== "system") return undefined;
+    systemPreference.addEventListener("change", applyTheme);
+    return () => systemPreference.removeEventListener("change", applyTheme);
+  }, [themePreference]);
 
   useEffect(() => {
     if (!game || game.phase !== "computer") return undefined;
@@ -617,16 +771,8 @@ export default function Home() {
     const timeout = window.setTimeout(() => {
       setGame((current) => {
         if (!current || current.phase !== "computer") return current;
-        const options = [];
-
-        for (let y = 0; y < GRID_SIZE; y += 1) {
-          for (let x = 0; x < GRID_SIZE; x += 1) {
-            if (!getShot(current.computerShots, x, y)) options.push({ x, y });
-          }
-        }
-
-        if (options.length === 0) return { ...current, phase: "player" };
-        const target = options[Math.floor(Math.random() * options.length)];
+        const target = chooseComputerTarget(current);
+        if (!target) return { ...current, phase: "player" };
         return fireShot(current, target, "computer");
       });
     }, 950);
@@ -639,15 +785,33 @@ export default function Home() {
     setGame(createGame());
   }
 
+  function chooseTheme(preference) {
+    setThemePreference(preference);
+    try {
+      window.localStorage.setItem("sink-em-theme", preference);
+    } catch {
+      // The choice still applies until the page is closed.
+    }
+  }
+
   function startBattle() {
+    const computerStarts = Math.random() < 0.5;
     setGame((current) => {
       if (!current || current.phase !== "placement" || current.playerShips.length !== FLEET.length) return current;
       return {
         ...current,
-        phase: "player",
+        phase: computerStarts ? "computer" : "player",
         selectedShipId: null,
-        message: "Fleet deployed. Choose a coordinate to fire.",
-        history: [...current.history, { id: `launch-${current.history.length}`, text: "Fleet deployed. Engagement authorized.", type: "system" }],
+        message: computerStarts
+          ? "The enemy seized the initiative. Incoming salvo."
+          : "Fleet deployed. You have the opening salvo.",
+        history: [...current.history, {
+          id: `launch-${current.history.length}`,
+          text: computerStarts
+            ? "Engagement authorized. Enemy has the opening salvo."
+            : "Engagement authorized. You have the opening salvo.",
+          type: "system",
+        }],
       };
     });
   }
@@ -766,20 +930,27 @@ export default function Home() {
 
   return (
     <main className="command-shell">
-      <header className="topbar">
+      <header className="topbar" id="top">
         <a className="brand" href="#top" aria-label="Sink ’Em home">
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
           <span className="brand-name">SINK <span>’EM</span></span>
         </a>
-        <div className="topbar-center"><span className="status-dot" />TACTICAL NETWORK <b>ONLINE</b></div>
-        <div className="topbar-right"><span>GAME MODE</span><strong>SOLO SKIRMISH</strong></div>
-      </header>
-
-      <section className="mission-heading" id="top">
-        <div className="mission-copy">
-          <div className="section-label page-eyebrow"><span>FIELD OPERATIONS</span><i />MISSION 01 / CLASSIC</div>
-          <h1>Command the <em>fleet.</em></h1>
-          <p>{deploymentPhase ? "Place your ships before the first salvo." : "Track the enemy. Make every shot count."}</p>
+        <div aria-label="Color theme" className="theme-picker" role="radiogroup">
+          <span className="theme-picker-title">THEME</span>
+          <div className="theme-options">
+            {["light", "dark", "system"].map((preference) => (
+              <label className={`theme-option ${themePreference === preference ? "theme-option-selected" : ""}`} key={preference}>
+                <input
+                  checked={themePreference === preference}
+                  name="theme-preference"
+                  onChange={() => chooseTheme(preference)}
+                  type="radio"
+                  value={preference}
+                />
+                <span>{preference[0].toUpperCase() + preference.slice(1)}</span>
+              </label>
+            ))}
+          </div>
         </div>
         <button
           className="new-game-button"
@@ -793,7 +964,7 @@ export default function Home() {
           {deploymentPhase && <span className="button-progress">{ownRemaining}/5</span>}
           {!deploymentPhase && <span className="button-arrow">↗</span>}
         </button>
-      </section>
+      </header>
 
       <section aria-live="polite" className={`turn-banner ${deploymentPhase ? "banner-deploy" : ""} ${phase === "victory" ? "banner-victory" : phase === "defeat" ? "banner-defeat" : phase === "computer" ? "banner-computer" : ""}`}>
         <div className="turn-copy">
@@ -820,13 +991,11 @@ export default function Home() {
                 onFire={playerFire}
                 ships={game?.enemyShips ?? []}
                 shots={[]}
-                stateLabel="DEPLOY FLEET FIRST"
                 title="Enemy waters"
               />
               <Board
                 count="POSITIONED"
                 countValue={`${ownRemaining.toString().padStart(2, "0")} / 05`}
-                coordinateNote={game?.placementOrientation === "horizontal" ? "HORIZONTAL PLACEMENT" : "VERTICAL PLACEMENT"}
                 disabled={!game}
                 eyebrow="FRIENDLY FLEET"
                 isTarget={false}
@@ -843,7 +1012,6 @@ export default function Home() {
                 onRotateShipEnd={rotatePlacedShip}
                 ships={game?.playerShips ?? []}
                 shots={[]}
-                stateLabel={selectedShip ? `PLACE ${selectedShip.name.toUpperCase()}` : "FLEET POSITIONED"}
                 title="Your waters"
               />
             </>
@@ -854,10 +1022,10 @@ export default function Home() {
                 disabled={!playerTurn || !game}
                 eyebrow="HOSTILE CONTACT"
                 isTarget
+                revealShips={phase === "defeat"}
                 onFire={playerFire}
                 ships={game?.enemyShips ?? []}
                 shots={game?.playerShots ?? []}
-                stateLabel={gameOver ? "BATTLE ENDED" : playerTurn ? "SELECT A TARGET" : "AWAITING RESPONSE"}
                 title="Enemy waters"
               />
               <Board
@@ -868,7 +1036,6 @@ export default function Home() {
                 onFire={() => {}}
                 ships={game?.playerShips ?? []}
                 shots={game?.computerShots ?? []}
-                stateLabel={phase === "computer" ? "INCOMING SALVO" : "FLEET STATUS"}
                 title="Your waters"
               />
             </>
@@ -918,15 +1085,8 @@ export default function Home() {
             </div>
           </div>
 
-          <div className="intel-footnote"><span>◈</span> {deploymentPhase ? "You can move ships until you start the battle." : "One shot per turn. Sunk ships are confirmed in the log."}</div>
         </aside>
       </div>
-
-      <footer className="page-footer">
-        <span>SINK ’EM COMMAND <b>©</b> 2026</span>
-        <div className="legend"><span><i className="legend-hit" />HIT</span><span><i className="legend-miss" />MISS</span><span><i className="legend-ship" />YOUR SHIP</span></div>
-        <span className="footer-right">ALL SYSTEMS NOMINAL <i /></span>
-      </footer>
     </main>
   );
 }
