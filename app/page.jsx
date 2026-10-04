@@ -48,12 +48,16 @@ function createFleet() {
   return ships;
 }
 
-function createGame() {
+function createGame(mode = "computer") {
   return {
+    mode,
     playerShips: [],
-    enemyShips: createFleet(),
+    enemyShips: mode === "computer"
+      ? createFleet()
+      : FLEET.map((ship) => ({ ...ship, cells: [], horizontal: true })),
     playerShots: [],
     computerShots: [],
+    manuallyLostShips: [],
     computerIntel: { sunkShipLengths: [], sunkHitCells: [] },
     phase: "placement",
     selectedShipId: FLEET[0].id,
@@ -76,6 +80,20 @@ function placementCells(start, length, orientation) {
     x: start.x + (orientation === "horizontal" ? index : 0),
     y: start.y + (orientation === "vertical" ? index : 0),
   }));
+}
+
+function cellsBetween(start, end) {
+  if (start.x === end.x) {
+    const fromY = Math.min(start.y, end.y);
+    const toY = Math.max(start.y, end.y);
+    return Array.from({ length: toY - fromY + 1 }, (_, index) => ({ x: start.x, y: fromY + index }));
+  }
+  if (start.y === end.y) {
+    const fromX = Math.min(start.x, end.x);
+    const toX = Math.max(start.x, end.x);
+    return Array.from({ length: toX - fromX + 1 }, (_, index) => ({ x: fromX + index, y: start.y }));
+  }
+  return [];
 }
 
 function canPlaceShip(ships, cells) {
@@ -344,15 +362,184 @@ function fireShot(game, target, side) {
   };
 }
 
-function FleetStatus({ ships, shots, label, showDamage = true }) {
+function cycleManualShot(game, target) {
+  const existingShot = getShot(game.playerShots, target.x, target.y);
+  const location = coordinateName(target);
+  let playerShots;
+  let result;
+  let action;
+
+  if (!existingShot) {
+    result = "miss";
+    action = "MARKED MISS";
+    playerShots = [...game.playerShots, { ...target, result }];
+  } else if (existingShot.result === "miss") {
+    result = "hit";
+    action = "MARKED HIT";
+    playerShots = game.playerShots.map((shot) => (
+      shot.x === target.x && shot.y === target.y ? { ...target, result } : shot
+    ));
+  } else {
+    action = "MARK CLEARED";
+    playerShots = game.playerShots.filter((shot) => shot.x !== target.x || shot.y !== target.y);
+  }
+
+  const text = `YOU  ${location}  /  ${action}`;
+  return {
+    ...game,
+    playerShots,
+    message: action === "MARKED MISS"
+      ? `${location} marked MISS. Click again to change it to HIT; click a third time to clear it.`
+      : action === "MARKED HIT"
+        ? `${location} marked HIT. Click again to clear this mark if it was a mistake.`
+        : `${location} cleared.`,
+    history: [...game.history, {
+      id: `manual-target-${game.history.length}`,
+      text,
+      type: action === "MARKED HIT" ? "hit" : action === "MARKED MISS" ? "miss" : "system",
+    }],
+  };
+}
+
+function recordIncomingShot(game, target) {
+  const existingShot = getShot(game.computerShots, target.x, target.y);
+  const location = coordinateName(target);
+  const computerShots = existingShot
+    ? game.computerShots.filter((shot) => shot.x !== target.x || shot.y !== target.y)
+    : [...game.computerShots, { ...target, result: shipAt(game.playerShips, target.x, target.y) ? "hit" : "miss" }];
+  const shot = getShot(computerShots, target.x, target.y);
+  const hitShip = shot?.result === "hit" ? shipAt(game.playerShips, target.x, target.y) : null;
+  const sunk = hitShip && isShipSunk(hitShip, computerShots);
+  const text = shot
+    ? `OPPONENT  ${location}  /  ${sunk ? `${hitShip.name.toUpperCase()} SUNK` : shot.result.toUpperCase()}`
+    : `OPPONENT  ${location}  /  MARK CLEARED`;
+
+  return {
+    ...game,
+    computerShots,
+    message: shot
+      ? sunk
+        ? `Your ${hitShip.name} is lost at ${location}. Click that square again to undo the mark.`
+        : `${location} recorded as an incoming ${shot.result}. Click again to undo the mark.`
+      : `Incoming mark at ${location} cleared.`,
+    history: [...game.history, {
+      id: `manual-incoming-${game.history.length}`,
+      text,
+      type: shot?.result ?? "system",
+    }],
+  };
+}
+
+function toggleManualLostShip(game, shipId) {
+  const ship = FLEET.find((item) => item.id === shipId);
+  if (!ship) return game;
+  const isLost = game.manuallyLostShips.includes(shipId);
+  const manuallyLostShips = isLost
+    ? game.manuallyLostShips.filter((id) => id !== shipId)
+    : [...game.manuallyLostShips, shipId];
+  const action = isLost ? "RESTORED" : "SUNK";
+  return {
+    ...game,
+    manuallyLostShips,
+    message: `${ship.name} ${isLost ? "restored" : "marked sunk"}. Click its indicators to change it.`,
+    history: [...game.history, {
+      id: `manual-sunk-${game.history.length}`,
+      text: `ENEMY  ${ship.name.toUpperCase()}  /  ${action}`,
+      type: isLost ? "system" : "hit",
+    }],
+  };
+}
+
+function placeManualEnemyShip(game, shipId, start, end) {
+  const ship = FLEET.find((item) => item.id === shipId);
+  if (!ship) return game;
+  const cells = cellsBetween(start, end);
+  const location = coordinateName(cells[0] ?? start);
+
+  if (cells.length !== ship.length) {
+    return { ...game, message: `${ship.name} needs exactly ${ship.length} consecutive HIT squares.` };
+  }
+  if (!cells.every((cell) => getShot(game.playerShots, cell.x, cell.y)?.result === "hit")) {
+    return { ...game, message: `Every square under ${ship.name} must be marked HIT.` };
+  }
+
+  const otherShips = game.enemyShips.filter((item) => item.id !== shipId);
+  if (!canPlaceShip(otherShips, cells)) {
+    return { ...game, message: "That hit run overlaps another ship already placed on the enemy waters." };
+  }
+
+  const horizontal = cells[0].y === cells[cells.length - 1].y;
+  const enemyShips = [...otherShips, { ...ship, cells, horizontal }].sort(
+    (left, right) => FLEET.findIndex((item) => item.id === left.id) - FLEET.findIndex((item) => item.id === right.id),
+  );
+  return {
+    ...game,
+    enemyShips,
+    message: `${ship.name} placed under the ${cells.length} HIT squares starting at ${location}.`,
+    history: [...game.history, {
+      id: `manual-placement-${game.history.length}`,
+      text: `YOU  ${ship.name.toUpperCase()}  /  POSITIONED ON HITS`,
+      type: "system",
+    }],
+  };
+}
+
+function FleetStatus({
+  ships,
+  shots,
+  label,
+  showDamage = true,
+  manualLostShips,
+  onToggleLost,
+  selectedManualShipId,
+  manualPlacementArmed,
+  onManualMark,
+}) {
+  const remaining = manualLostShips
+    ? ships.length - manualLostShips.length
+    : ships.filter((ship) => !isShipSunk(ship, shots)).length;
+
   return (
     <section className="fleet-status" aria-label={label}>
       <div className="section-label fleet-heading">
         <span>{label}</span>
-        <span>{ships.filter((ship) => !isShipSunk(ship, shots)).length.toString().padStart(2, "0")} / 05</span>
+        <span>{remaining.toString().padStart(2, "0")} / 05</span>
       </div>
       <div className="fleet-list">
         {ships.map((ship) => {
+          if (manualLostShips) {
+            const sunk = manualLostShips.includes(ship.id);
+            const placed = ship.cells.length > 0;
+            const selected = selectedManualShipId === ship.id;
+            const armed = manualPlacementArmed && selected;
+            return (
+              <div className={`fleet-row fleet-row-manual ${sunk ? "fleet-row-sunk" : ""} ${selected ? "fleet-row-manual-selected" : ""}`} key={ship.id}>
+                <div className="manual-ship-identity">
+                  <span className="fleet-name">{ship.name}</span>
+                  <button
+                    aria-label={sunk ? `Restore ${ship.name}` : `Mark ${ship.name} sunk`}
+                    aria-pressed={sunk}
+                    className="manual-fleet-health-toggle"
+                    onClick={() => onToggleLost(ship.id)}
+                    type="button"
+                  >
+                    <span className="fleet-health" aria-hidden="true">
+                      {Array.from({ length: ship.length }, (_, index) => <i className={sunk ? "health-hit" : ""} key={`${ship.id}-${index}`} />)}
+                    </span>
+                  </button>
+                </div>
+                <button
+                  aria-label={placed ? `Clear ${ship.name} placement` : armed ? `Cancel ${ship.name} placement` : `Mark ${ship.name} placement`}
+                  aria-pressed={armed}
+                  className={`manual-mark-button manual-fleet-mark ${armed ? "manual-mark-armed" : ""}`}
+                  onClick={() => onManualMark(ship.id)}
+                  type="button"
+                >
+                  {placed ? "CLEAR" : "MARK"}
+                </button>
+              </div>
+            );
+          }
           const hitCount = ship.cells.filter((cell) => getShot(shots, cell.x, cell.y)?.result === "hit").length;
           const sunk = hitCount === ship.length;
           const hits = showDamage || sunk ? hitCount : 0;
@@ -367,7 +554,7 @@ function FleetStatus({ ships, shots, label, showDamage = true }) {
                 ))}
               </span>
               <span className={`fleet-state ${sunk ? "state-sunk" : damaged ? "state-damaged" : ""}`}>
-                {sunk ? "LOST" : damaged ? "HIT" : "READY"}
+                {damaged ? "HIT" : ""}
               </span>
             </div>
           );
@@ -513,6 +700,10 @@ function Board({
   isTarget,
   revealShips = false,
   disabled,
+  allowShotEdits = false,
+  interactive = false,
+  manualPlacementShip,
+  onPlaceManualShip,
   onFire,
   count,
   countValue,
@@ -528,9 +719,50 @@ function Board({
   onRotateShipEnd,
 }) {
   const [hoveredCell, setHoveredCell] = useState(null);
+  const [manualDrag, setManualDrag] = useState(null);
   useEffect(() => {
     if (!draggedShip) setHoveredCell(null);
   }, [draggedShip]);
+  useEffect(() => {
+    setManualDrag(null);
+  }, [manualPlacementShip?.id]);
+
+  function cellFromElement(element) {
+    const cellElement = element instanceof Element ? element.closest("[data-board-cell]") : null;
+    return cellElement
+      ? { x: Number(cellElement.dataset.boardX), y: Number(cellElement.dataset.boardY) }
+      : null;
+  }
+
+  function cellFromPointer(event) {
+    const cellElement = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-board-cell]");
+    return cellElement
+      ? { x: Number(cellElement.dataset.boardX), y: Number(cellElement.dataset.boardY) }
+      : null;
+  }
+
+  function beginManualShipDrag(event) {
+    if (!manualPlacementShip || event.button !== 0) return;
+    const start = cellFromElement(event.target);
+    if (!start || getShot(shots, start.x, start.y)?.result !== "hit") return;
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    setManualDrag({ start, end: start });
+  }
+
+  function moveManualShipDrag(event) {
+    if (!manualDrag) return;
+    const end = cellFromPointer(event);
+    if (end) setManualDrag((current) => current ? { ...current, end } : current);
+  }
+
+  function finishManualShipDrag(event) {
+    if (!manualDrag) return;
+    const end = cellFromPointer(event) ?? manualDrag.end;
+    if (manualPlacementShip) onPlaceManualShip(manualPlacementShip.id, manualDrag.start, end);
+    setManualDrag(null);
+  }
+
   const shotCount = shots.length;
   const previewShip = draggedShip ? FLEET.find((ship) => ship.id === draggedShip.shipId) : selectedShip;
   const previewOrientation = draggedShip?.orientation ?? orientation;
@@ -551,12 +783,27 @@ function Board({
   ));
   const previewShips = draggedShip ? ships.filter((ship) => ship.id !== draggedShip.shipId) : ships;
   const previewValid = preview.length > 0 && canPlaceShip(previewShips, preview);
+  const manualPreviewCells = manualDrag ? cellsBetween(manualDrag.start, manualDrag.end) : [];
+  const manualPreviewKeys = new Set(manualPreviewCells.map(coordinateKey));
+  const manualPreviewHasSize = manualPlacementShip && manualPreviewCells.length === manualPlacementShip.length;
+  const manualPreviewValid = Boolean(manualPreviewHasSize
+    && manualPreviewCells.every((cell) => getShot(shots, cell.x, cell.y)?.result === "hit")
+    && canPlaceShip(ships.filter((ship) => ship.id !== manualPlacementShip.id), manualPreviewCells));
+  const manualPreviewShip = manualPreviewHasSize
+    ? {
+      ...manualPlacementShip,
+      cells: manualPreviewCells,
+      horizontal: manualPreviewCells[0].y === manualPreviewCells[manualPreviewCells.length - 1].y,
+    }
+    : null;
   const visibleSilhouetteShips = isTarget
-    ? (revealShips ? ships : ships.filter((ship) => isShipSunk(ship, shots)))
+    ? (revealShips
+      ? ships.filter((ship) => ship.cells.length > 0)
+      : ships.filter((ship) => ship.cells.length > 0 && isShipSunk(ship, shots)))
     : ships;
 
   return (
-    <section className={`board-card ${isTarget ? "target-card" : "home-card"} ${placement ? "placement-card" : ""}`}>
+    <section className={`board-card ${isTarget ? "target-card" : "home-card"} ${placement ? "placement-card" : ""} ${manualPlacementShip ? "manual-placement-active" : ""}`}>
       <div className="board-card-head">
         <div>
           <div className="section-label board-eyebrow"><span className="tiny-signal" />{eyebrow}</div>
@@ -568,7 +815,13 @@ function Board({
         </div>
       </div>
 
-      <div className="board-frame">
+      <div
+        className="board-frame"
+        onPointerCancel={() => setManualDrag(null)}
+        onPointerDown={beginManualShipDrag}
+        onPointerMove={moveManualShipDrag}
+        onPointerUp={finishManualShipDrag}
+      >
         <div className="axis-corner" />
         {COLUMNS.split("").map((column) => <span className="axis-label axis-column" key={column}>{column}</span>)}
 
@@ -579,6 +832,14 @@ function Board({
             ship={isTarget ? { ...ship, revealed: true } : ship}
           />
         ))}
+        {isTarget && manualPreviewShip && (
+          <ShipSilhouette
+            key="manual-ship-preview"
+            preview
+            valid={manualPreviewValid}
+            ship={manualPreviewShip}
+          />
+        )}
         {!isTarget && placement && previewInBounds && previewShip && (
           <ShipSilhouette
             key="placement-preview"
@@ -601,6 +862,11 @@ function Board({
             isTarget={isTarget}
             revealShips={revealShips}
             disabled={disabled}
+            allowShotEdits={allowShotEdits}
+            manualPlacementShip={manualPlacementShip}
+            manualPreviewKeys={manualPreviewKeys}
+            manualPreviewValid={manualPreviewValid}
+            interactive={interactive}
             onFire={onFire}
             placement={placement}
             selectedShip={selectedShip}
@@ -631,6 +897,11 @@ function BoardRow({
   isTarget,
   revealShips,
   disabled,
+  allowShotEdits,
+  manualPlacementShip,
+  manualPreviewKeys,
+  manualPreviewValid,
+  interactive,
   onFire,
   placement,
   selectedShip,
@@ -665,7 +936,9 @@ function BoardRow({
         const isPreview = placement && previewKeys.has(coordinateKey({ x, y }));
         if (placement) classes.push("cell-placement");
         if (isPreview) classes.push(previewValid ? "cell-preview" : "cell-preview-invalid");
-        const label = `${coordinateName({ x, y })}${shot ? `, ${shot.result}` : ship ? ", friendly ship" : ", unmarked"}${isTarget && revealShips && underlyingShip ? `, ${underlyingShip.name}` : ""}`;
+        const isManualPreview = manualPreviewKeys.has(coordinateKey({ x, y }));
+        if (isManualPreview) classes.push(manualPreviewValid ? "cell-ship-preview-valid" : "cell-ship-preview-invalid");
+        const label = `${coordinateName({ x, y })}${shot ? `, ${shot.result}${allowShotEdits && !manualPlacementShip ? ", click to cycle or clear mark" : ""}` : ship ? ", friendly ship" : ", unmarked"}${manualPlacementShip && shot?.result === "hit" ? `, drag to place ${manualPlacementShip.name}` : ""}${isTarget && (revealShips || underlyingShip?.cells?.length > 0) && underlyingShip ? `, ${underlyingShip.name}` : ""}`;
         const contents = shot
           ? <span className={`sonar-mark ${shot.result === "hit" ? "mark-hit" : "mark-miss"}`} />
           : null;
@@ -674,9 +947,14 @@ function BoardRow({
           <button
             aria-label={label}
             className={classes.join(" ")}
-            disabled={disabled || Boolean(shot)}
+            data-board-cell
+            data-board-x={x}
+            data-board-y={y}
+            disabled={disabled || (Boolean(shot) && !allowShotEdits)}
             key={x}
-            onClick={() => onFire({ x, y })}
+            onClick={() => {
+              if (!manualPlacementShip) onFire({ x, y });
+            }}
             type="button"
           >
             {contents}
@@ -723,6 +1001,17 @@ function BoardRow({
           >
             {contents}
           </button>
+        ) : interactive ? (
+          <button
+            aria-label={label}
+            className={classes.join(" ")}
+            disabled={disabled}
+            key={x}
+            onClick={() => onFire({ x, y })}
+            type="button"
+          >
+            {contents}
+          </button>
         ) : (
           <div aria-label={label} className={classes.join(" ")} key={x} role="img">
             {contents}
@@ -736,6 +1025,9 @@ function BoardRow({
 export default function Home() {
   const [game, setGame] = useState(null);
   const [draggedShip, setDraggedShip] = useState(null);
+  const [selectedManualShipId, setSelectedManualShipId] = useState(null);
+  const [manualPlacementArmed, setManualPlacementArmed] = useState(false);
+  const [selectedMode, setSelectedMode] = useState("computer");
   const [themePreference, setThemePreference] = useState("system");
 
   useEffect(() => {
@@ -782,7 +1074,17 @@ export default function Home() {
 
   function beginNewBattle() {
     setDraggedShip(null);
-    setGame(createGame());
+    setSelectedManualShipId(null);
+    setManualPlacementArmed(false);
+    setGame(createGame(selectedMode));
+  }
+
+  function changeMode(mode) {
+    setSelectedMode(mode);
+    setDraggedShip(null);
+    setSelectedManualShipId(null);
+    setManualPlacementArmed(false);
+    setGame(createGame(mode));
   }
 
   function chooseTheme(preference) {
@@ -798,6 +1100,19 @@ export default function Home() {
     const computerStarts = Math.random() < 0.5;
     setGame((current) => {
       if (!current || current.phase !== "placement" || current.playerShips.length !== FLEET.length) return current;
+      if (current.mode === "manual") {
+        return {
+          ...current,
+          phase: "manual",
+          selectedShipId: null,
+          message: "Fleet deployed. Call coordinates, record results on enemy waters, and mark sunk ships in the sidebar.",
+          history: [...current.history, {
+            id: `launch-${current.history.length}`,
+            text: "Tabletop play started. Tracking is manual.",
+            type: "system",
+          }],
+        };
+      }
       return {
         ...current,
         phase: computerStarts ? "computer" : "player",
@@ -912,18 +1227,94 @@ export default function Home() {
 
   function playerFire(target) {
     setGame((current) => {
-      if (!current || current.phase !== "player" || getShot(current.playerShots, target.x, target.y)) return current;
+      if (!current) return current;
+      if (current.mode === "manual" && current.phase === "manual") return cycleManualShot(current, target);
+      if (current.phase !== "player" || getShot(current.playerShots, target.x, target.y)) return current;
       return fireShot(current, target, "player");
     });
   }
 
+  function recordManualIncoming(target) {
+    setGame((current) => {
+      if (!current || current.mode !== "manual" || current.phase !== "manual") return current;
+      return recordIncomingShot(current, target);
+    });
+  }
+
+  function toggleManualLost(shipId) {
+    setGame((current) => {
+      if (!current || current.mode !== "manual" || current.phase !== "manual") return current;
+      return toggleManualLostShip(current, shipId);
+    });
+  }
+
+  function useManualMarkControl(shipId) {
+    if (!game || game.mode !== "manual" || game.phase !== "manual") return;
+    const ship = FLEET.find((item) => item.id === shipId);
+    if (!ship) return;
+    const isPlaced = game.enemyShips.some((item) => item.id === ship.id && item.cells.length > 0);
+
+    if (isPlaced) {
+      setManualPlacementArmed(false);
+      setSelectedManualShipId(null);
+      setGame((current) => {
+        if (!current || current.mode !== "manual" || current.phase !== "manual") return current;
+        const enemyShips = current.enemyShips.map((item) => item.id === ship.id
+          ? { ...item, cells: [], horizontal: true }
+          : item);
+        return {
+          ...current,
+          enemyShips,
+          message: `${ship.name} placement cleared. Its HIT marks remain on enemy waters.`,
+          history: [...current.history, {
+            id: `manual-clear-placement-${current.history.length}`,
+            text: `YOU  ${ship.name.toUpperCase()}  /  PLACEMENT CLEARED`,
+            type: "system",
+          }],
+        };
+      });
+      return;
+    }
+
+    if (manualPlacementArmed && selectedManualShipId === shipId) {
+      setManualPlacementArmed(false);
+      setSelectedManualShipId(null);
+      setGame((current) => current?.mode === "manual" && current.phase === "manual"
+        ? { ...current, message: `${ship.name} placement canceled. Press MARK to try again.` }
+        : current);
+      return;
+    }
+
+    setSelectedManualShipId(shipId);
+    setManualPlacementArmed(true);
+    setGame((current) => current?.mode === "manual" && current.phase === "manual"
+      ? { ...current, message: `Drag across exactly ${ship.length} consecutive HIT squares to place ${ship.name}.` }
+      : current);
+  }
+
+  function placeManualEnemyShipAt(shipId, start, end) {
+    setManualPlacementArmed(false);
+    setGame((current) => {
+      if (!current || current.mode !== "manual" || current.phase !== "manual") return current;
+      return placeManualEnemyShip(current, shipId, start, end);
+    });
+  }
+
   const phase = game?.phase ?? "loading";
+  const manualMode = game?.mode === "manual";
   const deploymentPhase = phase === "placement";
-  const playerTurn = phase === "player";
+  const playerTurn = phase === "player" || phase === "manual";
   const gameOver = phase === "victory" || phase === "defeat";
   const selectedShip = game ? FLEET.find((ship) => ship.id === game.selectedShipId) ?? null : null;
+  const selectedManualShip = game?.mode === "manual"
+    ? FLEET.find((ship) => ship.id === selectedManualShipId) ?? null
+    : null;
   const fleetComplete = Boolean(game && game.playerShips.length === FLEET.length);
-  const enemyRemaining = game ? game.enemyShips.filter((ship) => !isShipSunk(ship, game.playerShots)).length : 5;
+  const enemyRemaining = game
+    ? manualMode
+      ? FLEET.length - game.manuallyLostShips.length
+      : game.enemyShips.filter((ship) => !isShipSunk(ship, game.playerShots)).length
+    : 5;
   const ownRemaining = game ? (deploymentPhase ? game.playerShips.length : game.playerShips.filter((ship) => !isShipSunk(ship, game.computerShots)).length) : 5;
   const shotsFired = game?.playerShots.length ?? 0;
   const readoutProgress = deploymentPhase ? ownRemaining * 20 : Math.min(100, shotsFired);
@@ -935,6 +1326,23 @@ export default function Home() {
           <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
           <span className="brand-name">SINK <span>’EM</span></span>
         </a>
+        <div aria-label="Game mode" className="mode-picker" role="radiogroup">
+          <span className="theme-picker-title">MODE</span>
+          <div className="theme-options">
+            {[{ id: "computer", label: "VS CPU" }, { id: "manual", label: "TABLETOP" }].map((mode) => (
+              <button
+                aria-checked={selectedMode === mode.id}
+                className={`theme-option ${selectedMode === mode.id ? "theme-option-selected" : ""}`}
+                key={mode.id}
+                onClick={() => changeMode(mode.id)}
+                role="radio"
+                type="button"
+              >
+                {mode.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <div aria-label="Color theme" className="theme-picker" role="radiogroup">
           <span className="theme-picker-title">THEME</span>
           <div className="theme-options">
@@ -960,23 +1368,31 @@ export default function Home() {
           type="button"
         >
           <span className="new-game-icon">{deploymentPhase ? "↗" : "＋"}</span>
-          <span>{deploymentPhase ? "START BATTLE" : "NEW BATTLE"}</span>
+          <span>{deploymentPhase ? (manualMode ? "START TABLETOP" : "START BATTLE") : (manualMode ? "NEW GAME" : "NEW BATTLE")}</span>
           {deploymentPhase && <span className="button-progress">{ownRemaining}/5</span>}
           {!deploymentPhase && <span className="button-arrow">↗</span>}
         </button>
       </header>
 
-      <section aria-live="polite" className={`turn-banner ${deploymentPhase ? "banner-deploy" : ""} ${phase === "victory" ? "banner-victory" : phase === "defeat" ? "banner-defeat" : phase === "computer" ? "banner-computer" : ""}`}>
+      <section aria-live="polite" className={`turn-banner ${deploymentPhase ? "banner-deploy" : ""} ${manualMode ? "banner-manual" : ""} ${phase === "victory" ? "banner-victory" : phase === "defeat" ? "banner-defeat" : phase === "computer" ? "banner-computer" : ""}`}>
         <div className="turn-copy">
-          <span className="section-label turn-label"><i className="pulse-dot" />{phase === "loading" ? "INITIALIZING" : deploymentPhase ? "DEPLOY YOUR FLEET" : phase === "computer" ? "ENEMY TURN" : gameOver ? "MISSION COMPLETE" : "YOUR TURN"}</span>
+          <span className="section-label turn-label"><i className="pulse-dot" />{phase === "loading" ? "INITIALIZING" : manualMode ? (deploymentPhase ? "TABLETOP DEPLOYMENT" : "TABLETOP TRACKING") : deploymentPhase ? "DEPLOY YOUR FLEET" : phase === "computer" ? "ENEMY TURN" : gameOver ? "MISSION COMPLETE" : "YOUR TURN"}</span>
           <strong>{game?.message ?? "Establishing secure link…"}</strong>
         </div>
         <div className="turn-meta">
-          <div><span>ENEMY FLEET</span><strong>{enemyRemaining.toString().padStart(2, "0")} <small>/ 05</small></strong></div>
+          <div><span>{manualMode ? "OPPONENT FLEET" : "ENEMY FLEET"}</span><strong>{enemyRemaining.toString().padStart(2, "0")} <small>/ 05</small></strong></div>
           <div className="turn-divider" />
           <div><span>YOUR FLEET</span><strong>{ownRemaining.toString().padStart(2, "0")} <small>/ 05</small></strong></div>
         </div>
       </section>
+
+      {manualMode && !deploymentPhase && (
+        <div className="manual-help">
+          <span><strong>ENEMY WATERS</strong> Click once for MISS, again for HIT, a third time to clear.</span>
+          <span><strong>YOUR WATERS</strong> Click called coordinates to record the incoming shot.</span>
+          <span><strong>FLEET LIST</strong> Press MARK beside a ship, then drag across its HIT squares. CLEAR removes its placement; click a ship’s indicators to mark or undo a sink.</span>
+        </div>
+      )}
 
       <div className="game-layout">
         <div className="board-deck">
@@ -986,7 +1402,7 @@ export default function Home() {
                 count="CONTACTS"
                 countValue="—"
                 disabled
-                eyebrow="HOSTILE CONTACT"
+                eyebrow={manualMode ? "OPPONENT WATER" : "HOSTILE CONTACT"}
                 isTarget
                 onFire={playerFire}
                 ships={game?.enemyShips ?? []}
@@ -1018,10 +1434,13 @@ export default function Home() {
           ) : (
             <>
               <Board
-                count="SALVOS"
+                count={manualMode ? "MARKS" : "SALVOS"}
                 disabled={!playerTurn || !game}
-                eyebrow="HOSTILE CONTACT"
+                eyebrow={manualMode ? "OPPONENT WATER" : "HOSTILE CONTACT"}
                 isTarget
+                allowShotEdits={manualMode}
+                manualPlacementShip={manualPlacementArmed ? selectedManualShip : null}
+                onPlaceManualShip={placeManualEnemyShipAt}
                 revealShips={phase === "defeat"}
                 onFire={playerFire}
                 ships={game?.enemyShips ?? []}
@@ -1030,10 +1449,11 @@ export default function Home() {
               />
               <Board
                 count="INBOUND"
-                disabled
-                eyebrow="FRIENDLY FLEET"
+                disabled={!manualMode || !game}
+                eyebrow={manualMode ? "YOUR FLEET" : "FRIENDLY FLEET"}
+                interactive={manualMode}
                 isTarget={false}
-                onFire={() => {}}
+                onFire={recordManualIncoming}
                 ships={game?.playerShips ?? []}
                 shots={game?.computerShots ?? []}
                 title="Your waters"
@@ -1050,9 +1470,9 @@ export default function Home() {
 
           <div className="intel-readout">
             <div className="readout-top"><span>MISSION STATUS</span><span className="readout-live"><i />LIVE</span></div>
-            <div className="readout-status">{phase === "loading" ? "CONNECTING" : deploymentPhase ? "DEPLOY FLEET" : phase === "computer" ? "UNDER FIRE" : gameOver ? (phase === "victory" ? "VICTORY" : "DEFEAT") : "ENGAGEMENT"}</div>
+            <div className="readout-status">{phase === "loading" ? "CONNECTING" : deploymentPhase ? "DEPLOY FLEET" : manualMode ? "MANUAL PLAY" : phase === "computer" ? "UNDER FIRE" : gameOver ? (phase === "victory" ? "VICTORY" : "DEFEAT") : "ENGAGEMENT"}</div>
             <div className="readout-rule"><span style={{ width: `${readoutProgress}%` }} /></div>
-            <div className="readout-bottom"><span>{deploymentPhase ? "FLEET POSITIONED" : "ENGAGEMENT PROGRESS"}</span><span>{deploymentPhase ? `${ownRemaining.toString().padStart(2, "0")} / 05 SHIPS` : `${shotsFired.toString().padStart(2, "0")} SHOTS`}</span></div>
+            <div className="readout-bottom"><span>{deploymentPhase ? "FLEET POSITIONED" : manualMode ? "ENEMY MARKS" : "ENGAGEMENT PROGRESS"}</span><span>{deploymentPhase ? `${ownRemaining.toString().padStart(2, "0")} / 05 SHIPS` : `${shotsFired.toString().padStart(2, "0")} SHOTS`}</span></div>
           </div>
 
           {deploymentPhase && game && (
@@ -1069,7 +1489,19 @@ export default function Home() {
               onDragEndShip={endShipDrag}
             />
           )}
-          {!deploymentPhase && game && <FleetStatus label="HOSTILE FLEET" ships={game.enemyShips} shots={game.playerShots} showDamage={false} />}
+          {!deploymentPhase && game && (
+            <FleetStatus
+              label={manualMode ? "OPPONENT FLEET" : "HOSTILE FLEET"}
+              ships={game.enemyShips}
+              shots={game.playerShots}
+              showDamage={false}
+              manualLostShips={manualMode ? game.manuallyLostShips : undefined}
+              onToggleLost={toggleManualLost}
+              selectedManualShipId={selectedManualShipId}
+              manualPlacementArmed={manualPlacementArmed}
+              onManualMark={useManualMarkControl}
+            />
+          )}
           {!deploymentPhase && game && <FleetStatus label="YOUR FLEET" ships={game.playerShips} shots={game.computerShots} />}
 
           <div className="event-log">
