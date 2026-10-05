@@ -1,6 +1,6 @@
-# Sink ’Em — Battleship
+# Pirates — Battle At Sea
 
-A Battleship game built with the Next.js App Router. Choose **VS CPU** to play against the computer, or **Tabletop** to use one screen as a manual companion for a physical game. In Tabletop mode, place your fleet, record called shots on your waters, cycle enemy-water marks from miss to hit to clear, and map enemy ships beneath matching hit runs.
+Pirates: Battle At Sea is a naval strategy game built with the Next.js App Router. Choose **VS CPU** to play against the computer, or **Manual Mode** to use one screen as a companion for a physical game. In Manual Mode, place your fleet, record called shots on your waters, cycle enemy-water marks from miss to hit to clear, and map enemy ships beneath matching hit runs.
 
 ## Run locally
 

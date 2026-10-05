@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const GRID_SIZE = 10;
 const COLUMNS = "ABCDEFGHIJ";
 const FLEET = [
-  { id: "carrier", name: "Alpha", length: 5, shortName: "CV" },
-  { id: "battleship", name: "Bravo", length: 4, shortName: "BB" },
-  { id: "cruiser", name: "Charlie", length: 3, shortName: "CA" },
-  { id: "submarine", name: "Delta", length: 3, shortName: "SS" },
-  { id: "destroyer", name: "Echo", length: 2, shortName: "DD" },
+  { id: "carrier", name: "Galleon", length: 5 },
+  { id: "battleship", name: "Frigate", length: 4 },
+  { id: "cruiser", name: "Schooner", length: 3 },
+  { id: "submarine", name: "Corsair", length: 3 },
+  { id: "destroyer", name: "Sloop", length: 2 },
 ];
 
 function coordinateKey({ x, y }) {
@@ -51,7 +51,7 @@ function createFleet() {
 function createGame(mode = "computer") {
   return {
     mode,
-    playerShips: [],
+    playerShips: createFleet(),
     enemyShips: mode === "computer"
       ? createFleet()
       : FLEET.map((ship) => ({ ...ship, cells: [], horizontal: true })),
@@ -60,10 +60,10 @@ function createGame(mode = "computer") {
     manuallyLostShips: [],
     computerIntel: { sunkShipLengths: [], sunkHitCells: [] },
     phase: "placement",
-    selectedShipId: FLEET[0].id,
+    selectedShipId: null,
     placementOrientation: "horizontal",
-    message: "Place your fleet to begin. Select a ship, then choose its starting square.",
-    history: [{ id: "start", text: "Deployment zone open. Awaiting fleet placement.", type: "system" }],
+    message: "Fleet randomized. Adjust any ship if needed.",
+    history: [{ id: "start", text: "Fleet placed. Review positions before battle.", type: "system" }],
   };
 }
 
@@ -141,7 +141,7 @@ function rotateShipFromEnd(game, shipId, endpoint) {
     return {
       ...game,
       playerShips: game.playerShips.map((item) => item.id === shipId ? rotatedShip : item),
-      message: `${ship.name} rotated ${direction.name} from ${location}.`,
+      message: `${ship.name} rotated at ${location}.`,
       history: [...game.history, {
         id: `rotation-${game.history.length}`,
         text: `YOU  ${location}  /  ${ship.name.toUpperCase()} ROTATED ${direction.name.toUpperCase()}`,
@@ -150,7 +150,7 @@ function rotateShipFromEnd(game, shipId, endpoint) {
     };
   }
 
-  return { ...game, message: `No clear space to rotate ${ship.name} from ${coordinateName(endpoint)}.` };
+  return { ...game, message: "No room to rotate there." };
 }
 
 function deployShip(game, shipId, start, orientation, advanceSelection) {
@@ -160,12 +160,12 @@ function deployShip(game, shipId, start, orientation, advanceSelection) {
   const cells = placementCells(start, ship.length, orientation);
 
   if (cells.some((cell) => cell.x < 0 || cell.x >= GRID_SIZE || cell.y < 0 || cell.y >= GRID_SIZE)) {
-    return { ...game, message: `${ship.name} will not fit there. Choose a starting square with enough open water.` };
+    return { ...game, message: "That ship does not fit there." };
   }
 
   const remainingShips = game.playerShips.filter((placedShip) => placedShip.id !== shipId);
   if (!canPlaceShip(remainingShips, cells)) {
-    return { ...game, message: "That space is occupied. Ships cannot overlap." };
+    return { ...game, message: "Ships cannot overlap." };
   }
 
   const placedShip = { ...ship, cells, horizontal: orientation === "horizontal" };
@@ -181,10 +181,10 @@ function deployShip(game, shipId, start, orientation, advanceSelection) {
     playerShips,
     selectedShipId,
     message: nextShip && advanceSelection
-      ? `${ship.name} positioned at ${location}. Next: ${nextShip.name}.`
+      ? `${ship.name} at ${location}. Next: ${nextShip.name}.`
       : playerShips.length === FLEET.length
-        ? "Fleet positioned. Start the battle when you are ready."
-        : `${ship.name} positioned at ${location}.`,
+        ? "Choose Start Battle when ready."
+        : `${ship.name} at ${location}.`,
     history: [...game.history, {
       id: `placement-${game.history.length}`,
       text: `YOU  ${location}  /  ${ship.name.toUpperCase()} DEPLOYED`,
@@ -332,13 +332,13 @@ function fireShot(game, target, side) {
   const location = coordinateName(target);
   const message = fleetDestroyed
     ? isPlayer
-      ? "Enemy fleet eliminated. The sea is yours."
-      : "Your fleet has been lost. The enemy controls these waters."
+      ? "You win!"
+      : "Your fleet was sunk."
     : sunk
       ? `${isPlayer ? "Enemy" : "Your"} ${targetShip.name} sunk at ${location}.`
       : result === "hit"
-        ? `${isPlayer ? "Direct hit" : "Incoming hit"} at ${location}.`
-        : `${isPlayer ? "Splash" : "Enemy splash"} at ${location}.`;
+        ? `${isPlayer ? "Hit" : "Incoming hit"} at ${location}.`
+        : `${isPlayer ? "Miss" : "Enemy missed"} at ${location}.`;
   const logLine = `${isPlayer ? "YOU" : "CPU"}  ${location}  /  ${sunk ? `${targetShip.name.toUpperCase()} SUNK` : result.toUpperCase()}`;
   const computerIntel = !isPlayer && sunk
     ? {
@@ -389,9 +389,9 @@ function cycleManualShot(game, target) {
     ...game,
     playerShots,
     message: action === "MARKED MISS"
-      ? `${location} marked MISS. Click again to change it to HIT; click a third time to clear it.`
+      ? `${location} marked miss.`
       : action === "MARKED HIT"
-        ? `${location} marked HIT. Click again to clear this mark if it was a mistake.`
+        ? `${location} marked hit.`
         : `${location} cleared.`,
     history: [...game.history, {
       id: `manual-target-${game.history.length}`,
@@ -419,9 +419,9 @@ function recordIncomingShot(game, target) {
     computerShots,
     message: shot
       ? sunk
-        ? `Your ${hitShip.name} is lost at ${location}. Click that square again to undo the mark.`
-        : `${location} recorded as an incoming ${shot.result}. Click again to undo the mark.`
-      : `Incoming mark at ${location} cleared.`,
+        ? `Your ${hitShip.name} sunk at ${location}.`
+        : `Incoming ${shot.result} at ${location}.`
+      : `Incoming mark cleared at ${location}.`,
     history: [...game.history, {
       id: `manual-incoming-${game.history.length}`,
       text,
@@ -441,7 +441,7 @@ function toggleManualLostShip(game, shipId) {
   return {
     ...game,
     manuallyLostShips,
-    message: `${ship.name} ${isLost ? "restored" : "marked sunk"}. Click its indicators to change it.`,
+    message: `${ship.name} ${isLost ? "restored" : "marked sunk"}.`,
     history: [...game.history, {
       id: `manual-sunk-${game.history.length}`,
       text: `ENEMY  ${ship.name.toUpperCase()}  /  ${action}`,
@@ -457,15 +457,15 @@ function placeManualEnemyShip(game, shipId, start, end) {
   const location = coordinateName(cells[0] ?? start);
 
   if (cells.length !== ship.length) {
-    return { ...game, message: `${ship.name} needs exactly ${ship.length} consecutive HIT squares.` };
+    return { ...game, message: `Select ${ship.length} connected hit squares.` };
   }
   if (!cells.every((cell) => getShot(game.playerShots, cell.x, cell.y)?.result === "hit")) {
-    return { ...game, message: `Every square under ${ship.name} must be marked HIT.` };
+    return { ...game, message: "Mark each square as a hit first." };
   }
 
   const otherShips = game.enemyShips.filter((item) => item.id !== shipId);
   if (!canPlaceShip(otherShips, cells)) {
-    return { ...game, message: "That hit run overlaps another ship already placed on the enemy waters." };
+    return { ...game, message: "Ships cannot overlap." };
   }
 
   const horizontal = cells[0].y === cells[cells.length - 1].y;
@@ -475,7 +475,7 @@ function placeManualEnemyShip(game, shipId, start, end) {
   return {
     ...game,
     enemyShips,
-    message: `${ship.name} placed under the ${cells.length} HIT squares starting at ${location}.`,
+    message: `${ship.name} marked on enemy waters.`,
     history: [...game.history, {
       id: `manual-placement-${game.history.length}`,
       text: `YOU  ${ship.name.toUpperCase()}  /  POSITIONED ON HITS`,
@@ -503,7 +503,7 @@ function FleetStatus({
     <section className="fleet-status" aria-label={label}>
       <div className="section-label fleet-heading">
         <span>{label}</span>
-        <span>{remaining.toString().padStart(2, "0")} / 05</span>
+        <span>{remaining} / {ships.length}</span>
       </div>
       <div className="fleet-list">
         {ships.map((ship) => {
@@ -564,14 +564,14 @@ function FleetStatus({
   );
 }
 
-function PlacementPanel({ ships, placedShips, selectedShipId, orientation, onSelectShip, onRotate, onRandomize, onReset, onDragStartShip, onDragEndShip }) {
+function PlacementPanel({ ships, placedShips, selectedShipId, orientation, onSelectShip, onRotate, onRandomize, onStartBattle, canStartBattle, manualMode, onDragStartShip, onDragEndShip }) {
   const placedCount = placedShips.length;
 
   return (
     <section className="placement-panel" aria-label="Fleet deployment controls">
       <div className="section-label placement-panel-label"><span className="placement-cross">⌖</span>FLEET DEPLOYMENT</div>
       <h3>Arrange your fleet</h3>
-      <p className="placement-instructions">Drag ships to place or move them. Click a ship end to rotate it; select a ship to reposition it.</p>
+      <p className="placement-instructions">Drag or select a ship to move it. Rotate with the button or a ship end.</p>
 
       <button className="rotate-button" disabled={!selectedShipId} onClick={onRotate} type="button">
         <span className="rotate-glyph" aria-hidden="true">⤾</span>
@@ -602,26 +602,28 @@ function PlacementPanel({ ships, placedShips, selectedShipId, orientation, onSel
               onClick={() => onSelectShip(ship.id)}
               type="button"
             >
-              <span className="deployment-code">{ship.shortName}</span>
               <span className="deployment-name">{ship.name}</span>
               <span className="deployment-segments" aria-hidden="true">
                 {Array.from({ length: ship.length }, (_, index) => <i key={index} />)}
               </span>
-              <span className="deployment-state">{selected ? "ACTIVE" : placed ? "MOVE" : "PLACE"}</span>
             </button>
           );
         })}
       </div>
 
-      <div className="deployment-progress">
-        <div><span>FLEET POSITIONED</span><strong>{placedCount.toString().padStart(2, "0")} / 05</strong></div>
-        <span className="deployment-progress-track"><i style={{ width: `${placedCount * 20}%` }} /></span>
-      </div>
-
       <button className="random-placement" onClick={onRandomize} type="button">
         <span aria-hidden="true">⤨</span> RANDOM PLACEMENT
       </button>
-      <button className="reset-placement" onClick={onReset} type="button">RESET PLACEMENT <span>↺</span></button>
+      <button
+        className="start-battle-button"
+        disabled={!canStartBattle}
+        onClick={onStartBattle}
+        title={!canStartBattle ? `Place all five ships to start (${placedCount}/5)` : undefined}
+        type="button"
+      >
+        <span>{manualMode ? "START TABLETOP" : "START BATTLE"}</span>
+        <span aria-hidden="true">↗</span>
+      </button>
     </section>
   );
 }
@@ -694,7 +696,6 @@ function ShipSilhouette({ ship, preview = false, valid = true, beingDragged = fa
 
 function Board({
   title,
-  eyebrow,
   ships,
   shots,
   isTarget,
@@ -707,6 +708,7 @@ function Board({
   onFire,
   count,
   countValue,
+  showShotCount = true,
   placement = false,
   selectedShip,
   orientation,
@@ -805,14 +807,13 @@ function Board({
   return (
     <section className={`board-card ${isTarget ? "target-card" : "home-card"} ${placement ? "placement-card" : ""} ${manualPlacementShip ? "manual-placement-active" : ""}`}>
       <div className="board-card-head">
-        <div>
-          <div className="section-label board-eyebrow"><span className="tiny-signal" />{eyebrow}</div>
-          <h2>{title}</h2>
-        </div>
-        <div className="board-shot-count">
-          <span>{count}</span>
-          <strong>{countValue ?? shotCount.toString().padStart(2, "0")}</strong>
-        </div>
+        <h2>{title}</h2>
+        {showShotCount && (
+          <div className="board-shot-count">
+            {count && <span>{count}</span>}
+            <strong>{countValue ?? shotCount}</strong>
+          </div>
+        )}
       </div>
 
       <div
@@ -919,7 +920,7 @@ function BoardRow({
 }) {
   return (
     <>
-      <span className="axis-label axis-row">{(y + 1).toString().padStart(2, "0")}</span>
+      <span className="axis-label axis-row">{y + 1}</span>
       {Array.from({ length: GRID_SIZE }, (_, x) => {
         const shot = getShot(shots, x, y);
         const underlyingShip = shipAt(ships, x, y);
@@ -1027,35 +1028,49 @@ export default function Home() {
   const [draggedShip, setDraggedShip] = useState(null);
   const [selectedManualShipId, setSelectedManualShipId] = useState(null);
   const [manualPlacementArmed, setManualPlacementArmed] = useState(false);
-  const [selectedMode, setSelectedMode] = useState("computer");
-  const [themePreference, setThemePreference] = useState("system");
+  const [battleModeDialogOpen, setBattleModeDialogOpen] = useState(false);
+  const newBattleButtonRef = useRef(null);
+  const battleModeDialogRef = useRef(null);
 
   useEffect(() => {
     setGame(createGame());
   }, []);
 
   useEffect(() => {
-    try {
-      const savedPreference = window.localStorage.getItem("sink-em-theme");
-      if (["light", "dark", "system"].includes(savedPreference)) setThemePreference(savedPreference);
-    } catch {
-      // Keep the system theme when browser storage is unavailable.
+    if (!battleModeDialogOpen) return undefined;
+
+    const previousFocus = document.activeElement;
+    const firstOption = battleModeDialogRef.current?.querySelector("button");
+    firstOption?.focus();
+
+    function handleDialogKeyDown(event) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setBattleModeDialogOpen(false);
+        return;
+      }
+
+      if (event.key !== "Tab") return;
+      const options = battleModeDialogRef.current?.querySelectorAll("button:not(:disabled)");
+      const first = options?.[0];
+      const last = options?.[options.length - 1];
+      if (!first || !last) return;
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     }
-  }, []);
 
-  useEffect(() => {
-    const systemPreference = window.matchMedia("(prefers-color-scheme: light)");
-    const applyTheme = () => {
-      document.documentElement.dataset.theme = themePreference === "system"
-        ? (systemPreference.matches ? "light" : "dark")
-        : themePreference;
+    window.addEventListener("keydown", handleDialogKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleDialogKeyDown);
+      if (previousFocus instanceof HTMLElement) previousFocus.focus();
     };
-
-    applyTheme();
-    if (themePreference !== "system") return undefined;
-    systemPreference.addEventListener("change", applyTheme);
-    return () => systemPreference.removeEventListener("change", applyTheme);
-  }, [themePreference]);
+  }, [battleModeDialogOpen]);
 
   useEffect(() => {
     if (!game || game.phase !== "computer") return undefined;
@@ -1072,28 +1087,12 @@ export default function Home() {
     return () => window.clearTimeout(timeout);
   }, [game]);
 
-  function beginNewBattle() {
+  function beginNewBattle(mode) {
     setDraggedShip(null);
     setSelectedManualShipId(null);
     setManualPlacementArmed(false);
-    setGame(createGame(selectedMode));
-  }
-
-  function changeMode(mode) {
-    setSelectedMode(mode);
-    setDraggedShip(null);
-    setSelectedManualShipId(null);
-    setManualPlacementArmed(false);
+    setBattleModeDialogOpen(false);
     setGame(createGame(mode));
-  }
-
-  function chooseTheme(preference) {
-    setThemePreference(preference);
-    try {
-      window.localStorage.setItem("sink-em-theme", preference);
-    } catch {
-      // The choice still applies until the page is closed.
-    }
   }
 
   function startBattle() {
@@ -1105,7 +1104,7 @@ export default function Home() {
           ...current,
           phase: "manual",
           selectedShipId: null,
-          message: "Fleet deployed. Call coordinates, record results on enemy waters, and mark sunk ships in the sidebar.",
+          message: "Click Enemy Waters to cycle miss → hit → clear. Record calls on Your Waters.",
           history: [...current.history, {
             id: `launch-${current.history.length}`,
             text: "Tabletop play started. Tracking is manual.",
@@ -1117,9 +1116,7 @@ export default function Home() {
         ...current,
         phase: computerStarts ? "computer" : "player",
         selectedShipId: null,
-        message: computerStarts
-          ? "The enemy seized the initiative. Incoming salvo."
-          : "Fleet deployed. You have the opening salvo.",
+        message: computerStarts ? "Enemy fires first." : "Choose a square on Enemy Waters.",
         history: [...current.history, {
           id: `launch-${current.history.length}`,
           text: computerStarts
@@ -1140,7 +1137,7 @@ export default function Home() {
         ...current,
         playerShips: current.playerShips.filter((placedShip) => placedShip.id !== shipId),
         selectedShipId: shipId,
-        message: `Reposition your ${ship.name}. Drag it or click a new starting square.`,
+        message: `Move ${ship.name}.`,
       };
     });
   }
@@ -1197,20 +1194,6 @@ export default function Home() {
     setDraggedShip(null);
   }
 
-  function resetPlacement() {
-    setGame((current) => {
-      if (!current || current.phase !== "placement") return current;
-      return {
-        ...current,
-        playerShips: [],
-        selectedShipId: FLEET[0].id,
-        placementOrientation: "horizontal",
-        message: "Fleet cleared. Select a ship and choose its starting square.",
-        history: [...current.history, { id: `reset-${current.history.length}`, text: "Deployment positions cleared.", type: "system" }],
-      };
-    });
-  }
-
   function randomizePlacement() {
     const playerShips = createFleet();
     setGame((current) => {
@@ -1219,7 +1202,7 @@ export default function Home() {
         ...current,
         playerShips,
         selectedShipId: null,
-        message: "Random fleet positioned. Review it, then drag or select MOVE to adjust any ship.",
+        message: "Fleet randomized. Adjust any ship if needed.",
         history: [...current.history, { id: `random-${current.history.length}`, text: "Random fleet positions generated.", type: "system" }],
       };
     });
@@ -1265,7 +1248,7 @@ export default function Home() {
         return {
           ...current,
           enemyShips,
-          message: `${ship.name} placement cleared. Its HIT marks remain on enemy waters.`,
+          message: `${ship.name} placement cleared. Hit marks remain.`,
           history: [...current.history, {
             id: `manual-clear-placement-${current.history.length}`,
             text: `YOU  ${ship.name.toUpperCase()}  /  PLACEMENT CLEARED`,
@@ -1280,7 +1263,7 @@ export default function Home() {
       setManualPlacementArmed(false);
       setSelectedManualShipId(null);
       setGame((current) => current?.mode === "manual" && current.phase === "manual"
-        ? { ...current, message: `${ship.name} placement canceled. Press MARK to try again.` }
+        ? { ...current, message: "Placement canceled." }
         : current);
       return;
     }
@@ -1288,7 +1271,7 @@ export default function Home() {
     setSelectedManualShipId(shipId);
     setManualPlacementArmed(true);
     setGame((current) => current?.mode === "manual" && current.phase === "manual"
-      ? { ...current, message: `Drag across exactly ${ship.length} consecutive HIT squares to place ${ship.name}.` }
+      ? { ...current, message: `Drag across ${ship.length} connected hit squares for ${ship.name}.` }
       : current);
   }
 
@@ -1304,7 +1287,6 @@ export default function Home() {
   const manualMode = game?.mode === "manual";
   const deploymentPhase = phase === "placement";
   const playerTurn = phase === "player" || phase === "manual";
-  const gameOver = phase === "victory" || phase === "defeat";
   const selectedShip = game ? FLEET.find((ship) => ship.id === game.selectedShipId) ?? null : null;
   const selectedManualShip = game?.mode === "manual"
     ? FLEET.find((ship) => ship.id === selectedManualShipId) ?? null
@@ -1316,81 +1298,65 @@ export default function Home() {
       : game.enemyShips.filter((ship) => !isShipSunk(ship, game.playerShots)).length
     : 5;
   const ownRemaining = game ? (deploymentPhase ? game.playerShips.length : game.playerShips.filter((ship) => !isShipSunk(ship, game.computerShots)).length) : 5;
-  const shotsFired = game?.playerShots.length ?? 0;
-  const readoutProgress = deploymentPhase ? ownRemaining * 20 : Math.min(100, shotsFired);
-
+  const statusTitle = phase === "loading"
+    ? "GETTING READY"
+    : deploymentPhase
+      ? fleetComplete ? "FLEET READY" : "PLACE FLEET"
+      : phase === "computer"
+        ? "ENEMY TURN"
+        : phase === "player"
+          ? "YOUR TURN"
+          : phase === "manual"
+            ? "MANUAL MODE"
+            : "BATTLE OVER";
   return (
     <main className="command-shell">
       <header className="topbar" id="top">
-        <a className="brand" href="#top" aria-label="Sink ’Em home">
-          <span className="brand-mark" aria-hidden="true"><i /><i /><i /><i /></span>
-          <span className="brand-name">SINK <span>’EM</span></span>
+        <a className="brand" href="#top" aria-label="Pirates: Battle At Sea home">
+          <span className="brand-copy">
+            <span className="brand-name">PIRATES</span>
+            <span className="brand-subtitle">BATTLE AT SEA</span>
+          </span>
         </a>
-        <div aria-label="Game mode" className="mode-picker" role="radiogroup">
-          <span className="theme-picker-title">MODE</span>
-          <div className="theme-options">
-            {[{ id: "computer", label: "VS CPU" }, { id: "manual", label: "TABLETOP" }].map((mode) => (
-              <button
-                aria-checked={selectedMode === mode.id}
-                className={`theme-option ${selectedMode === mode.id ? "theme-option-selected" : ""}`}
-                key={mode.id}
-                onClick={() => changeMode(mode.id)}
-                role="radio"
-                type="button"
-              >
-                {mode.label}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div aria-label="Color theme" className="theme-picker" role="radiogroup">
-          <span className="theme-picker-title">THEME</span>
-          <div className="theme-options">
-            {["light", "dark", "system"].map((preference) => (
-              <label className={`theme-option ${themePreference === preference ? "theme-option-selected" : ""}`} key={preference}>
-                <input
-                  checked={themePreference === preference}
-                  name="theme-preference"
-                  onChange={() => chooseTheme(preference)}
-                  type="radio"
-                  value={preference}
-                />
-                <span>{preference[0].toUpperCase() + preference.slice(1)}</span>
-              </label>
-            ))}
-          </div>
-        </div>
         <button
           className="new-game-button"
-          disabled={!game || (deploymentPhase && !fleetComplete)}
-          onClick={deploymentPhase ? startBattle : beginNewBattle}
-          title={deploymentPhase && !fleetComplete ? `Place all five ships to start (${ownRemaining}/5)` : undefined}
+          disabled={!game}
+          onClick={() => setBattleModeDialogOpen(true)}
+          ref={newBattleButtonRef}
           type="button"
         >
-          <span className="new-game-icon">{deploymentPhase ? "↗" : "＋"}</span>
-          <span>{deploymentPhase ? (manualMode ? "START TABLETOP" : "START BATTLE") : (manualMode ? "NEW GAME" : "NEW BATTLE")}</span>
-          {deploymentPhase && <span className="button-progress">{ownRemaining}/5</span>}
-          {!deploymentPhase && <span className="button-arrow">↗</span>}
+          <span className="new-game-icon">＋</span>
+          <span>NEW BATTLE</span>
+          <span className="button-arrow">↗</span>
         </button>
       </header>
 
-      <section aria-live="polite" className={`turn-banner ${deploymentPhase ? "banner-deploy" : ""} ${manualMode ? "banner-manual" : ""} ${phase === "victory" ? "banner-victory" : phase === "defeat" ? "banner-defeat" : phase === "computer" ? "banner-computer" : ""}`}>
-        <div className="turn-copy">
-          <span className="section-label turn-label"><i className="pulse-dot" />{phase === "loading" ? "INITIALIZING" : manualMode ? (deploymentPhase ? "TABLETOP DEPLOYMENT" : "TABLETOP TRACKING") : deploymentPhase ? "DEPLOY YOUR FLEET" : phase === "computer" ? "ENEMY TURN" : gameOver ? "MISSION COMPLETE" : "YOUR TURN"}</span>
-          <strong>{game?.message ?? "Establishing secure link…"}</strong>
-        </div>
-        <div className="turn-meta">
-          <div><span>{manualMode ? "OPPONENT FLEET" : "ENEMY FLEET"}</span><strong>{enemyRemaining.toString().padStart(2, "0")} <small>/ 05</small></strong></div>
-          <div className="turn-divider" />
-          <div><span>YOUR FLEET</span><strong>{ownRemaining.toString().padStart(2, "0")} <small>/ 05</small></strong></div>
-        </div>
-      </section>
-
-      {manualMode && !deploymentPhase && (
-        <div className="manual-help">
-          <span><strong>ENEMY WATERS</strong> Click once for MISS, again for HIT, a third time to clear.</span>
-          <span><strong>YOUR WATERS</strong> Click called coordinates to record the incoming shot.</span>
-          <span><strong>FLEET LIST</strong> Press MARK beside a ship, then drag across its HIT squares. CLEAR removes its placement; click a ship’s indicators to mark or undo a sink.</span>
+      {battleModeDialogOpen && (
+        <div
+          className="battle-mode-backdrop"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setBattleModeDialogOpen(false);
+          }}
+        >
+          <section
+            aria-labelledby="battle-mode-title"
+            aria-modal="true"
+            className="battle-mode-dialog"
+            ref={battleModeDialogRef}
+            role="dialog"
+          >
+            <span className="section-label battle-mode-label"><i className="pulse-dot" />NEW ENGAGEMENT</span>
+            <h2 id="battle-mode-title">Choose your battle mode</h2>
+            <p>Pick how you want to play this match.</p>
+            <div className="battle-mode-options">
+              <button className="battle-mode-option" onClick={() => beginNewBattle("computer")} type="button">
+                <span>VS CPU</span><span aria-hidden="true">↗</span>
+              </button>
+              <button className="battle-mode-option" onClick={() => beginNewBattle("manual")} type="button">
+                <span>Manual Mode</span><span aria-hidden="true">↗</span>
+              </button>
+            </div>
+          </section>
         </div>
       )}
 
@@ -1399,26 +1365,22 @@ export default function Home() {
           {deploymentPhase ? (
             <>
               <Board
-                count="CONTACTS"
-                countValue="—"
                 disabled
-                eyebrow={manualMode ? "OPPONENT WATER" : "HOSTILE CONTACT"}
                 isTarget
                 onFire={playerFire}
+                showShotCount={false}
                 ships={game?.enemyShips ?? []}
                 shots={[]}
                 title="Enemy waters"
               />
               <Board
-                count="POSITIONED"
-                countValue={`${ownRemaining.toString().padStart(2, "0")} / 05`}
                 disabled={!game}
-                eyebrow="FRIENDLY FLEET"
                 isTarget={false}
                 onPlace={placeShipAt}
                 onFire={() => {}}
                 orientation={game?.placementOrientation}
                 placement
+                showShotCount={false}
                 selectedShip={selectedShip}
                 draggedShip={draggedShip}
                 onDragStartShip={beginShipDrag}
@@ -1434,9 +1396,8 @@ export default function Home() {
           ) : (
             <>
               <Board
-                count={manualMode ? "MARKS" : "SALVOS"}
+                countValue={`${enemyRemaining} / ${FLEET.length}`}
                 disabled={!playerTurn || !game}
-                eyebrow={manualMode ? "OPPONENT WATER" : "HOSTILE CONTACT"}
                 isTarget
                 allowShotEdits={manualMode}
                 manualPlacementShip={manualPlacementArmed ? selectedManualShip : null}
@@ -1448,9 +1409,8 @@ export default function Home() {
                 title="Enemy waters"
               />
               <Board
-                count="INBOUND"
+                countValue={`${ownRemaining} / ${FLEET.length}`}
                 disabled={!manualMode || !game}
-                eyebrow={manualMode ? "YOUR FLEET" : "FRIENDLY FLEET"}
                 interactive={manualMode}
                 isTarget={false}
                 onFire={recordManualIncoming}
@@ -1460,20 +1420,23 @@ export default function Home() {
               />
             </>
           )}
+          {(phase === "victory" || phase === "defeat") && (
+            <div className={`battle-result-backdrop battle-result-${phase}`}>
+              <div aria-atomic="true" className="battle-result-popup" role="alert">
+                {phase === "victory" ? "You Win" : "You Lose"}
+              </div>
+            </div>
+          )}
         </div>
 
-        <aside className="intel-panel">
-          <div className="intel-heading">
-            <div className="section-label"><span className="intel-crosshair">⌖</span>COMMAND INTEL</div>
-            <span className="intel-classification">CLASSIFIED</span>
-          </div>
-
-          <div className="intel-readout">
-            <div className="readout-top"><span>MISSION STATUS</span><span className="readout-live"><i />LIVE</span></div>
-            <div className="readout-status">{phase === "loading" ? "CONNECTING" : deploymentPhase ? "DEPLOY FLEET" : manualMode ? "MANUAL PLAY" : phase === "computer" ? "UNDER FIRE" : gameOver ? (phase === "victory" ? "VICTORY" : "DEFEAT") : "ENGAGEMENT"}</div>
-            <div className="readout-rule"><span style={{ width: `${readoutProgress}%` }} /></div>
-            <div className="readout-bottom"><span>{deploymentPhase ? "FLEET POSITIONED" : manualMode ? "ENEMY MARKS" : "ENGAGEMENT PROGRESS"}</span><span>{deploymentPhase ? `${ownRemaining.toString().padStart(2, "0")} / 05 SHIPS` : `${shotsFired.toString().padStart(2, "0")} SHOTS`}</span></div>
-          </div>
+        <aside className="side-panel">
+          {!deploymentPhase && (
+            <section aria-live="polite" className="status-card">
+              <div className="section-label status-heading">STATUS</div>
+              <h2 className="status-title">{statusTitle}</h2>
+              <p className="status-message">{game?.message ?? "Preparing your fleet."}</p>
+            </section>
+          )}
 
           {deploymentPhase && game && (
             <PlacementPanel
@@ -1484,14 +1447,16 @@ export default function Home() {
               onSelectShip={selectShip}
               onRotate={rotatePlacement}
               onRandomize={randomizePlacement}
-              onReset={resetPlacement}
+              onStartBattle={startBattle}
+              canStartBattle={fleetComplete}
+              manualMode={manualMode}
               onDragStartShip={beginShipDrag}
               onDragEndShip={endShipDrag}
             />
           )}
           {!deploymentPhase && game && (
             <FleetStatus
-              label={manualMode ? "OPPONENT FLEET" : "HOSTILE FLEET"}
+              label="ENEMY FLEET"
               ships={game.enemyShips}
               shots={game.playerShots}
               showDamage={false}
@@ -1503,20 +1468,6 @@ export default function Home() {
             />
           )}
           {!deploymentPhase && game && <FleetStatus label="YOUR FLEET" ships={game.playerShips} shots={game.computerShots} />}
-
-          <div className="event-log">
-            <div className="section-label log-heading"><span>COMMS LOG</span><span>RECENT</span></div>
-            <div className="log-list">
-              {(game?.history ?? []).slice(-4).reverse().map((entry) => (
-                <div className={`log-entry log-${entry.type}`} key={entry.id}>
-                  <span className="log-marker" />
-                  <span>{entry.text}</span>
-                </div>
-              ))}
-              {!game && <div className="log-entry"><span className="log-marker" /><span>Initializing fleet telemetry…</span></div>}
-            </div>
-          </div>
-
         </aside>
       </div>
     </main>

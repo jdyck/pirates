@@ -1,8 +1,8 @@
 import "./globals.css";
 
 export const metadata = {
-  title: "Sink ’Em — Battleship",
-  description: "Sink ’Em is a one-player Battleship game. Arrange your fleet, then take on the computer.",
+  title: "Pirates — Battle At Sea",
+  description: "Pirates: Battle At Sea is a naval strategy game with VS CPU and manual tabletop modes.",
 };
 
 export default function RootLayout({ children }) {
