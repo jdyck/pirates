@@ -1,0 +1,226 @@
+.command-shell {
+  width: min(1512px, 100% - 88px);
+}
+
+.topbar {
+  height: 78px;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand-name {
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: .17em;
+}
+
+.brand-subtitle {
+  color: var(--muted);
+  font: 14px var(--mono);
+  letter-spacing: .16em;
+}
+
+.new-game-button {
+  display: flex;
+  align-items: center;
+  height: 42px;
+  gap: 12px;
+  padding: 0 13px;
+  color: var(--ocean-950);
+  background: var(--aqua);
+  border: 1px solid var(--aqua);
+  cursor: pointer;
+  font: 20px var(--mono);
+  letter-spacing: .09em;
+  transition: background .18s, transform .18s, box-shadow .18s;
+}
+
+.new-game-button:hover {
+  background: var(--aqua-bright);
+  box-shadow: 0 0 24px rgba(130, 219, 206, .17);
+  transform: translateY(-1px);
+}
+
+.new-game-button:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+
+.new-game-icon {
+  font: 19px var(--sans);
+  line-height: 1;
+}
+
+.button-arrow {
+  margin-left: 7px;
+  font: 13px var(--sans);
+}
+
+.game-layout {
+  grid-template-columns: minmax(0, 1fr) 292px;
+  gap: 17px;
+  margin-top: 17px;
+}
+
+.battle-result-backdrop {
+  position: absolute;
+  z-index: 8;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(4, 14, 21, .62);
+  backdrop-filter: blur(2px);
+}
+
+.battle-result-popup {
+  min-width: min(320px, 100%);
+  padding: 25px 32px;
+  border: 1px solid var(--aqua);
+  background: linear-gradient(145deg, rgba(16, 38, 51, .98), rgba(6, 17, 27, .98));
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .5), 0 0 25px rgba(130, 219, 206, .12);
+  color: var(--aqua-bright);
+  font: 38px/1 var(--display);
+  letter-spacing: .06em;
+  text-align: center;
+}
+
+.battle-result-defeat .battle-result-popup {
+  border-color: var(--coral);
+  color: #f09a86;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .5), 0 0 25px rgba(228, 118, 102, .12);
+}
+
+.status-card {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid var(--line);
+  background: linear-gradient(150deg, rgba(16, 38, 51, .92), rgba(8, 23, 34, .93));
+}
+
+.status-card {
+  border-color: rgba(130, 219, 206, .24);
+}
+
+.status-heading {
+  color: var(--aqua);
+  font-size: 14px;
+}
+
+.status-title {
+  margin: 8px 0 4px;
+  color: var(--paper);
+  font: 20px/1 var(--display);
+  letter-spacing: .035em;
+}
+
+.status-message {
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.board-deck {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px;
+}
+
+@media (min-height: 850px) and (min-width: 1121px) {
+  .command-shell {
+    min-height: 100vh;
+  }
+}
+
+@media (max-width: 1180px) {
+  .command-shell {
+    width: min(100% - 56px, 1050px);
+  }
+  .game-layout {
+    grid-template-columns: minmax(0, 1fr) 270px;
+    gap: 13px;
+  }
+  .board-deck {
+    gap: 13px;
+  }
+}
+
+@media (max-width: 980px) {
+  .command-shell {
+    width: min(100% - 44px, 830px);
+  }
+  .game-layout {
+    grid-template-columns: 1fr;
+  }
+  .side-panel {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .status-card {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 760px) and (min-width: 641px) {
+  .topbar {
+    height: auto;
+    min-height: 78px;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+    padding: 12px 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .command-shell {
+    width: calc(100% - 28px);
+  }
+  .topbar {
+    height: auto;
+    min-height: 61px;
+    padding: 10px 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas: "brand action";
+  }
+  .brand {
+    grid-area: brand;
+  }
+  .brand-name {
+    font-size: 12px;
+  }
+  .brand-subtitle {
+    font-size: 12px;
+  }
+  .topbar > .new-game-button {
+    grid-area: action;
+  }
+  .new-game-button {
+    height: 42px;
+    gap: 7px;
+    padding: 0 9px;
+    font-size: 16px;
+  }
+  .new-game-icon {
+    font-size: 15px;
+  }
+  .button-arrow {
+    display: none;
+  }
+  .game-layout {
+    gap: 11px;
+    margin-top: 11px;
+  }
+  .side-panel {
+    grid-template-columns: 1fr;
+  }
+  .status-card {
+    grid-column: 1;
+  }
+  .board-deck {
+    grid-template-columns: 1fr;
+    gap: 11px;
+  }
+}

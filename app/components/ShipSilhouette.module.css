@@ -1,0 +1,87 @@
+.ship-silhouette {
+  z-index: 0;
+  position: absolute;
+  inset: 0;
+  margin: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  overflow: visible;
+  pointer-events: none;
+  transition: opacity .14s;
+}
+
+.silhouette-hull {
+  fill: #347983;
+  stroke: #a5cbc4;
+  stroke-width: 34;
+  stroke-linejoin: round;
+  filter: drop-shadow(0 3px 3px rgba(0, 8, 13, .55));
+}
+
+.silhouette-deck {
+  fill: rgba(14, 42, 50, .35);
+  stroke: rgba(201, 229, 218, .58);
+  stroke-width: 23;
+  stroke-linejoin: round;
+}
+
+.silhouette-markings {
+  fill: rgba(203, 232, 221, .2);
+  stroke: rgba(218, 239, 226, .52);
+  stroke-width: 24;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.silhouette-markings path:first-child {
+  fill: none;
+}
+
+.silhouette-equipment {
+  fill: #719a98;
+  stroke: rgba(222, 240, 226, .72);
+  stroke-width: 26;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.silhouette-equipment circle {
+  fill: #88aaa3;
+}
+
+.silhouette-sunk-enemy .silhouette-hull {
+  fill: #56868a;
+  stroke: #e2d9c9;
+}
+
+.silhouette-sunk-enemy .silhouette-deck {
+  fill: rgba(8, 32, 40, .3);
+  stroke: rgba(238, 228, 205, .82);
+}
+
+.silhouette-sunk-enemy .silhouette-equipment {
+  fill: #9bb9ad;
+  stroke: rgba(245, 237, 217, .9);
+}
+
+.silhouette-being-dragged {
+  opacity: .27;
+}
+
+.silhouette-preview-valid .silhouette-hull {
+  fill: #287d70;
+  stroke: #b6f1e3;
+}
+
+.silhouette-preview-valid .silhouette-deck {
+  stroke: rgba(220, 255, 239, .74);
+}
+
+.silhouette-preview-invalid .silhouette-hull {
+  fill: #944840;
+  stroke: #f09a86;
+}
+
+.silhouette-preview-invalid .silhouette-deck {
+  stroke: rgba(255, 209, 192, .76);
+}
