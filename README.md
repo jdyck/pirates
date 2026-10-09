@@ -15,6 +15,10 @@ Open [http://localhost:3000](http://localhost:3000). Drag ships from the fleet l
 
 Use Tailwind utilities for layout, spacing, and simple interface styling. Shared colors and fonts are defined in `app/globals.css` and exposed as Tailwind tokens such as `text-aqua`, `text-paper`, and `font-display`. The existing global reset is retained; Tailwind Preflight is not imported.
 
-Detailed visual styles live beside their components in CSS Modules: `Board.module.css` covers the board and cells, `ShipSilhouette.module.css` covers SVG artwork, and the sidebar and battle mode dialog each have their own module. Page layout breakpoints and result overlays live in `app/page.module.css`. Keep new graphics effects and animations in the owning component's module, and use inline styles for calculated board coordinates.
+`app/page.jsx` composes `GameHeader`, `GameBoards`, `GamePanel`, and `BattleModeDialog`. `GamePanel` selects deployment controls or battle fleets and `BattleStatus`; `GameBoards` owns waters selection and the timed `BattleResult` overlay. Game rules and turn timing remain in `useGameController` and `lib`.
+
+Visual styles live beside their components in CSS Modules. `app/page.module.css` handles the outer layout; `GameBoards.module.css` handles board visibility and sizing; `BattleStatus.module.css` handles the phone drawer; `BattleResult.module.css` handles result overlays. `Board.module.css` covers cells, `ShipSilhouette.module.css` covers SVG artwork, and fleet and deployment styles remain in `GameSidebar.module.css`. The shared `--waters-max-width` variable in `app/globals.css` controls board and stacked fleet widths. Keep effects and animations in the owning component's module, and use inline styles for calculated board coordinates.
+
+See [dev-notes.md](dev-notes.md) for responsive breakpoints, dimensions, board switching, the status drawer, and the files that control them.
 
 Run `npm test` and `npm run build` to verify changes.

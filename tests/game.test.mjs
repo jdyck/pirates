@@ -11,6 +11,7 @@ function fixture(mode = 'computer', phase = 'placement') {
     playerShips: FLEET.map((ship, y) => ({ ...ship, horizontal: true, cells: placementCells({ x: 0, y }, ship.length, 'horizontal') })),
     enemyShips: [], playerShots: [], computerShots: [],
     manuallyLostShips: [], computerIntel: { sunkShipLengths: [], sunkHitCells: [] },
+    manualTurn: mode === 'manual' ? 'player' : null,
     selectedShipId: null, placementOrientation: 'horizontal',
   };
 }
@@ -39,6 +40,29 @@ test('manual shots cycle miss, hit, clear without changing another cell', () => 
   assert.equal(game.phase, 'manual');
 });
 
+test('first manual shot chooses its side and later shots respect the active turn', () => {
+  for (const side of ['player', 'enemy']) {
+    let game = gameReducer(fixture('manual'), { type: 'start-battle' });
+    const outgoing = { type: 'player-fire', target: { x: 9, y: 9 } };
+    const incoming = { type: 'record-manual-incoming', target: { x: 8, y: 8 } };
+    assert.equal(game.manualTurn, null);
+    const activeShot = side === 'player' ? outgoing : incoming;
+    const inactiveShot = side === 'player' ? incoming : outgoing;
+    assert.strictEqual(gameReducer(game, { type: 'end-manual-turn', side }), game);
+    game = gameReducer(game, activeShot);
+    assert.equal((side === 'player' ? game.playerShots : game.computerShots).length, 1);
+    assert.equal(game.manualTurn, side);
+    assert.strictEqual(gameReducer(game, inactiveShot), game);
+    assert.strictEqual(gameReducer(game, { type: 'end-manual-turn', side: 'invalid' }), game);
+    game = gameReducer(game, { type: 'end-manual-turn', side });
+    assert.equal(game.manualTurn, side === 'player' ? 'enemy' : 'player');
+    assert.strictEqual(gameReducer(game, activeShot), game);
+    game = gameReducer(game, inactiveShot);
+    assert.equal(game.playerShots.length, 1);
+    assert.equal(game.computerShots.length, 1);
+  }
+});
+
 test('computer shots reject stale games, shot counts, and turns', () => {
   const game = fixture('computer', 'computer');
   const action = { type: 'computer-fire', gameId: 7, computerShotsCount: 0, target: { x: 9, y: 9 } };
@@ -48,8 +72,41 @@ test('computer shots reject stale games, shot counts, and turns', () => {
   assert.strictEqual(gameReducer(playerTurn, action), playerTurn);
   const next = gameReducer(game, action);
   assert.deepEqual(next.computerShots, [{ x: 9, y: 9, result: 'miss' }]);
-  assert.equal(next.phase, 'player');
+  assert.equal(next.phase, 'computer');
+  assert.equal(next.computerNextPhase, 'player');
   assert.strictEqual(gameReducer(next, action), next);
+  assert.strictEqual(gameReducer(next, { type: 'player-fire', target: { x: 8, y: 8 } }), next);
+  const endTurn = { type: 'end-computer-turn', gameId: 7, computerShotsCount: 1 };
+  assert.strictEqual(gameReducer(next, { ...endTurn, gameId: 6 }), next);
+  assert.strictEqual(gameReducer(next, { ...endTurn, computerShotsCount: 0 }), next);
+  const finished = gameReducer(next, endTurn);
+  assert.equal(finished.phase, 'player');
+  assert.equal(finished.computerNextPhase, null);
+  assert.strictEqual(gameReducer(finished, endTurn), finished);
+});
+
+test('player shot keeps the turn locked until its delayed handoff', () => {
+  const game = fixture('computer', 'player');
+  game.enemyShips = game.playerShips;
+  const shot = { type: 'player-fire', target: { x: 9, y: 9 } };
+  const next = gameReducer(game, shot);
+  assert.deepEqual(next.playerShots, [{ ...shot.target, result: 'miss' }]);
+  assert.equal(next.phase, 'player');
+  assert.equal(next.playerNextPhase, 'computer');
+  assert.strictEqual(gameReducer(next, { ...shot, target: { x: 8, y: 8 } }), next);
+  assert.strictEqual(gameReducer(next, { type: 'computer-fire', gameId: 7, computerShotsCount: 0, target: shot.target }), next);
+  const end = { type: 'end-player-turn', gameId: 7, playerShotsCount: 1 };
+  assert.strictEqual(gameReducer(next, { ...end, gameId: 6 }), next);
+  assert.strictEqual(gameReducer(next, { ...end, playerShotsCount: 0 }), next);
+  const finished = gameReducer(next, end);
+  assert.equal(finished.phase, 'computer');
+  assert.equal(finished.playerNextPhase, null);
+  assert.strictEqual(gameReducer(finished, end), finished);
+
+  const winningShot = gameReducer({ ...game, enemyShips: [] }, shot);
+  assert.equal(winningShot.phase, 'player');
+  assert.equal(winningShot.playerNextPhase, 'victory');
+  assert.equal(gameReducer(winningShot, end).phase, 'victory');
 });
 
 test('vertical placement accepts the board edge and rejects extending past it', () => {

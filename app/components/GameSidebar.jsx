@@ -18,11 +18,11 @@ export function FleetStatus({
 
   return (
     <section className={styles["fleet-status"]} aria-label={label}>
-      <div className={`flex items-center gap-[8px] text-muted font-mono text-[18px] tracking-[.13em] ${styles["fleet-heading"]}`}>
-        <span>{label}</span>
-        <span>{remaining} / {ships.length}</span>
+
+      <div className={`text-muted font-mono ${styles["fleet-heading"]}`}>
+        {label}
       </div>
-      <div className="flex flex-col">
+      <div className={styles["fleet-ships"]}>
         {ships.map((ship) => {
           if (manualLostShips) {
             const sunk = manualLostShips.includes(ship.id);
@@ -31,7 +31,14 @@ export function FleetStatus({
             const armed = selected;
             return (
               <div className={`${styles["fleet-row"]} ${styles["fleet-row-manual"]} ${sunk ? styles["fleet-row-sunk"] : ""} ${selected ? styles["fleet-row-manual-selected"] : ""}`} key={ship.id}>
-                <div className={styles["manual-ship-identity"]}>
+                <div className={`${styles["manual-ship-identity"]} ${styles["manual-mark-button"]} ${armed ? styles["manual-mark-armed"] : ""}`}>
+                  <button
+                    aria-label={placed ? `Clear ${ship.name} placement` : armed ? `Cancel ${ship.name} placement` : `Mark ${ship.name} placement`}
+                    aria-pressed={armed}
+                    className={styles["manual-fleet-mark"]}
+                    onClick={() => onManualMark(ship.id)}
+                    type="button"
+                  />
                   <span className={styles["fleet-name"]}>{ship.name}</span>
                   <button
                     aria-label={sunk ? `Restore ${ship.name}` : `Mark ${ship.name} sunk`}
@@ -45,22 +52,12 @@ export function FleetStatus({
                     </span>
                   </button>
                 </div>
-                <button
-                  aria-label={placed ? `Clear ${ship.name} placement` : armed ? `Cancel ${ship.name} placement` : `Mark ${ship.name} placement`}
-                  aria-pressed={armed}
-                  className={`${styles["manual-mark-button"]} ${styles["manual-fleet-mark"]} ${armed ? styles["manual-mark-armed"] : ""}`}
-                  onClick={() => onManualMark(ship.id)}
-                  type="button"
-                >
-                  {placed ? "CLEAR" : "MARK"}
-                </button>
               </div>
             );
           }
           const hitCount = ship.cells.filter((cell) => getShot(shots, cell.x, cell.y)?.result === "hit").length;
           const sunk = hitCount === ship.length;
           const hits = showDamage || sunk ? hitCount : 0;
-          const damaged = showDamage && hitCount > 0 && !sunk;
 
           return (
             <div className={`${styles["fleet-row"]} ${sunk ? styles["fleet-row-sunk"] : ""}`} key={ship.id}>
@@ -69,9 +66,6 @@ export function FleetStatus({
                 {ship.cells.map((cell, index) => (
                   <i className={index < hits ? styles["health-hit"] : ""} key={coordinateKey(cell)} />
                 ))}
-              </span>
-              <span className={`${styles["fleet-state"]} ${sunk ? styles["state-sunk"] : damaged ? styles["state-damaged"] : ""}`}>
-                {damaged ? "HIT" : ""}
               </span>
             </div>
           );
@@ -85,18 +79,10 @@ export function PlacementPanel({ ships, placedShips, selectedShipId, orientation
   const placedCount = placedShips.length;
 
   return (
-    <section className={styles["placement-panel"]} aria-label="Fleet deployment controls">
-      <div className={`flex items-center gap-[8px] text-muted font-mono text-[18px] tracking-[.13em] ${styles["placement-panel-label"]}`}><span className={styles["placement-cross"]}>⌖</span>FLEET DEPLOYMENT</div>
-      <h3>Arrange your fleet</h3>
-      <p className={styles["placement-instructions"]}>Drag or select a ship to move it. Rotate with the button or a ship end.</p>
+    <section className={`${styles["placement-panel"]} ${styles["fleet-status"]}`} aria-label="Fleet deployment controls">
+      <div className={`flex items-center gap-[8px] text-muted font-mono text-[18px] tracking-[.13em] ${styles["fleet-heading"]}`}><span className={styles["placement-cross"]}>⌖</span>FLEET DEPLOYMENT</div>
 
-      <button className={styles["rotate-button"]} disabled={!selectedShipId} onClick={onRotate} type="button">
-        <span className={styles["rotate-glyph"]} aria-hidden="true">⤾</span>
-        <span className={`${styles["rotate-copy"]} flex flex-col gap-[3px]`}><small>SHIP HEADING</small><strong>{orientation === "horizontal" ? "HORIZONTAL" : "VERTICAL"}</strong></span>
-        <span className={styles["rotate-hint"]}>ROTATE</span>
-      </button>
-
-      <div className="mt-[8px] flex flex-col">
+      <div className={styles["fleet-ships"]}>
         {ships.map((ship) => {
           const placedShip = placedShips.find((placedItem) => placedItem.id === ship.id);
           const placed = Boolean(placedShip);
@@ -106,7 +92,7 @@ export function PlacementPanel({ ships, placedShips, selectedShipId, orientation
             <button
               aria-label={`${ship.name}${placed ? ", placed; drag or select to move" : ", ready to place; drag onto the board"}${selected ? ", selected" : ""}`}
               aria-pressed={selected}
-              className={`${styles["deployment-ship"]} ${selected ? styles["deployment-ship-selected"] : ""} ${placed ? styles["deployment-ship-placed"] : ""}`}
+              className={`${styles["fleet-row"]} ${styles["deployment-ship"]} ${selected ? styles["deployment-ship-selected"] : ""} ${placed ? styles["deployment-ship-placed"] : ""}`}
               draggable
               key={ship.id}
               onDragEnd={onDragEndShip}
@@ -119,14 +105,20 @@ export function PlacementPanel({ ships, placedShips, selectedShipId, orientation
               onClick={() => onSelectShip(ship.id)}
               type="button"
             >
-              <span className={styles["deployment-name"]}>{ship.name}</span>
-              <span className={`${styles["deployment-segments"]} flex gap-[2px]`} aria-hidden="true">
+              <span className={styles["fleet-name"]}>{ship.name}</span>
+              <span className={`${styles["fleet-health"]} flex gap-[2px]`} aria-hidden="true">
                 {Array.from({ length: ship.length }, (_, index) => <i key={index} />)}
               </span>
             </button>
           );
         })}
       </div>
+
+      <button className={styles["rotate-button"]} disabled={!selectedShipId} onClick={onRotate} type="button">
+        <span className={styles["rotate-glyph"]} aria-hidden="true">⤾</span>
+        <span className={`${styles["rotate-copy"]} flex flex-col gap-[3px]`}><small>SHIP HEADING</small><strong>{orientation === "horizontal" ? "HORIZONTAL" : "VERTICAL"}</strong></span>
+        <span className={styles["rotate-hint"]}>ROTATE</span>
+      </button>
 
       <button className={styles["random-placement"]} onClick={onRandomize} type="button">
         <span aria-hidden="true">⤨</span> RANDOM PLACEMENT

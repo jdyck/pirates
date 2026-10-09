@@ -18,36 +18,38 @@ import { BattleCell, PlacementCell } from "./BoardCells.jsx";
 import { useBoardInteractions } from "./useBoardInteractions.js";
 
 function Board({
-  title,
-  ships,
-  shots,
-  isTarget,
-  revealShips = false,
-  disabled,
-  allowShotEdits = false,
-  interactive = false,
-  manualPlacementShip,
-  onPlaceManualShip,
-  onFire,
-  countValue,
-  showShotCount = true,
-  placement = false,
-  selectedShip,
-  orientation,
-  onPlace,
-  draggedShip,
-  onDragStartShip,
-  onDragEndShip,
-  onDropShip,
-  onSelectShip,
-  onRotateShipEnd,
-}) {
+                 title,
+                 turnControls,
+                 ships,
+                 shots,
+                 isTarget,
+                 revealShips = false,
+                 disabled,
+                 allowShotEdits = false,
+                 interactive = false,
+                 flashingCell,
+                 manualPlacementShip,
+                 onPlaceManualShip,
+                 onFire,
+                 countValue,
+                 showShotCount = true,
+                 placement = false,
+                 selectedShip,
+                 orientation,
+                 onPlace,
+                 draggedShip,
+                 onDragStartShip,
+                 onDragEndShip,
+                 onDropShip,
+                 onSelectShip,
+                 onRotateShipEnd,
+               }) {
   const {
     hoveredCell,
     setHoveredCell,
     manualDrag,
     manualPointerHandlers,
-  } = useBoardInteractions({ draggedShip, manualPlacementShip, shots, onPlaceManualShip });
+  } = useBoardInteractions({ draggedShip, manualPlacementShip, shots, onPlaceManualShip, disabled });
 
   const shotCount = shots.length;
   const previewShip = draggedShip ? FLEET.find((ship) => ship.id === draggedShip.shipId) : selectedShip;
@@ -89,6 +91,7 @@ function Board({
       : ships.filter((ship) => ship.cells.length > 0 && isShipSunk(ship, shots)))
     : ships;
   const rowModel = {
+    flashingCell,
     ships,
     shots,
     isTarget,
@@ -118,7 +121,15 @@ function Board({
   return (
     <section className={`${styles["board-card"]} ${isTarget ? styles["target-card"] : styles["home-card"]} ${placement ? styles["placement-card"] : ""} ${manualPlacementShip ? styles["manual-placement-active"] : ""}`}>
       <div className={`${styles["board-card-head"]} flex items-end justify-between`}>
-        <h2>{title}</h2>
+        <div className={styles["board-title-controls"]}>
+          <h2>{title}</h2>
+          {turnControls?.active && (
+              <button className={styles["turn-button"]} type="button" onClick={turnControls.onEndTurn}
+                aria-label={`${title}: end turn`}>
+                END TURN
+              </button>
+          )}
+        </div>
         {showShotCount && (
           <div className={styles["board-shot-count"]}>
             <strong>{countValue ?? shotCount}</strong>
@@ -198,12 +209,17 @@ function BoardRow({ y, board }) {
         const sunkEnemyShip = isTarget && underlyingShip && isShipSunk(underlyingShip, shots);
         const shipEnd = placement && isShipEndpoint(ship, x, y);
         const classes = [styles["board-cell"]];
+        if (y === 0) classes.push(styles["cell-first-row"]);
+        if (x === 0) classes.push(styles["cell-first-column"]);
         if (ship) classes.push(styles["cell-occupied"]);
         if (sunkEnemyShip) classes.push(styles["cell-sunk-revealed"]);
         if (shipEnd) classes.push(styles["cell-ship-end"]);
         if (shot?.result === "hit") classes.push(styles["cell-hit"]);
         if (shot?.result === "miss") classes.push(styles["cell-miss"]);
         if (shot && isTarget) classes.push(styles["cell-targeted"]);
+        if (board.flashingCell?.x === x && board.flashingCell?.y === y) {
+          classes.push(styles["cell-shot-choice"]);
+        }
         const isPreview = placement && previewKeys.has(coordinateKey({ x, y }));
         if (isPreview) classes.push(previewValid ? styles["cell-preview"] : styles["cell-preview-invalid"]);
         const isManualPreview = manualPreviewKeys.has(coordinateKey({ x, y }));
@@ -242,81 +258,95 @@ function BoardRow({ y, board }) {
 }
 
 export function EnemyWatersBoard({
-  ships,
-  shots = [],
-  disabled,
-  allowShotEdits = false,
-  manualPlacementShip,
-  onPlaceManualShip,
-  revealShips = false,
-  onFire,
-  countValue,
-  showShotCount = true,
-}) {
+                                   flashingCell,
+                                   ships,
+                                   turnControls,
+                                   shots = [],
+                                   disabled,
+                                   allowShotEdits = false,
+                                   manualPlacementShip,
+                                   onPlaceManualShip,
+                                   revealShips = false,
+                                   onFire,
+                                   countValue,
+                                   showShotCount = true,
+                                 }) {
   return (
-    <Board
-      allowShotEdits={allowShotEdits}
-      countValue={countValue}
-      disabled={disabled}
-      isTarget
-      manualPlacementShip={manualPlacementShip}
-      onFire={onFire}
-      onPlaceManualShip={onPlaceManualShip}
-      revealShips={revealShips}
-      ships={ships}
-      shots={shots}
-      showShotCount={showShotCount}
-      title="Enemy waters"
-    />
+    <div data-waters="enemy">
+      <Board
+        flashingCell={flashingCell}
+        allowShotEdits={allowShotEdits}
+        countValue={countValue}
+        disabled={disabled}
+        isTarget
+        manualPlacementShip={manualPlacementShip}
+        onFire={onFire}
+        onPlaceManualShip={onPlaceManualShip}
+        revealShips={revealShips}
+        ships={ships}
+        shots={shots}
+        showShotCount={showShotCount}
+        title="Enemy waters"
+        turnControls={turnControls}
+      />
+    </div>
   );
 }
 
 export function PlacementBoard({
-  ships,
-  disabled,
-  selectedShip,
-  orientation,
-  draggedShip,
-  onPlace,
-  onDragStartShip,
-  onDragEndShip,
-  onDropShip,
-  onSelectShip,
-  onRotateShipEnd,
-}) {
+                                 ships,
+                                 disabled,
+                                 selectedShip,
+                                 orientation,
+                                 draggedShip,
+                                 onPlace,
+                                 onDragStartShip,
+                                 onDragEndShip,
+                                 onDropShip,
+                                 onSelectShip,
+                                 onRotateShipEnd,
+                               }) {
   return (
-    <Board
-      disabled={disabled}
-      draggedShip={draggedShip}
-      isTarget={false}
-      onDragEndShip={onDragEndShip}
-      onDragStartShip={onDragStartShip}
-      onDropShip={onDropShip}
-      onPlace={onPlace}
-      onRotateShipEnd={onRotateShipEnd}
-      onSelectShip={onSelectShip}
-      orientation={orientation}
-      placement
-      selectedShip={selectedShip}
-      ships={ships}
-      shots={[]}
-      showShotCount={false}
-      title="Your waters"
-    />
+    <div data-waters="your">
+
+      <Board
+        disabled={disabled}
+        draggedShip={draggedShip}
+        isTarget={false}
+        onDragEndShip={onDragEndShip}
+        onDragStartShip={onDragStartShip}
+        onDropShip={onDropShip}
+        onPlace={onPlace}
+        onRotateShipEnd={onRotateShipEnd}
+        onSelectShip={onSelectShip}
+        orientation={orientation}
+        placement
+        selectedShip={selectedShip}
+        ships={ships}
+        shots={[]}
+        showShotCount={false}
+        title="Your waters"
+      />
+    </div>
   );
 }
 
-export function YourWatersBoard({ ships, shots, disabled, interactive, onFire, countValue }) {
+export function YourWatersBoard({ ships, shots, disabled, interactive, onFire, countValue, flashingCell, turnControls }) {
   return (
-    <Board
-      countValue={countValue}
-      disabled={disabled}
-      interactive={interactive}
-      isTarget={false}
-      onFire={onFire}
-      ships={ships}
-      shots={shots}
-      title="Your waters"
-    />
+    <div data-waters="your">
+
+      <Board
+        flashingCell={flashingCell}
+        countValue={countValue}
+        disabled={disabled}
+        interactive={interactive}
+        isTarget={false}
+        onFire={onFire}
+        ships={ships}
+        shots={shots}
+        title="Your waters"
+        turnControls={turnControls}
+      />
+    </div>
   );
 }

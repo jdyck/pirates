@@ -1,0 +1,91 @@
+.status-card {
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid rgba(130, 219, 206, .24);
+  background: linear-gradient(150deg, rgba(16, 38, 51, .92), rgba(8, 23, 34, .93));
+}
+
+.status-heading {
+  color: var(--aqua);
+  font-size: 14px;
+}
+
+.status-drawer-toggle {
+  display: none;
+}
+
+.status-title {
+  margin: 8px 0 4px;
+  color: var(--paper);
+  font: 20px/1 var(--display);
+  letter-spacing: .035em;
+}
+
+.status-message {
+  min-height: 110px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+@media (max-width: 768px), (orientation: portrait) and (max-width: 1100px) {
+  .status-card {
+    position: fixed;
+    inset: auto 0 0;
+    z-index: 10;
+    padding: 0 12px env(safe-area-inset-bottom, 0px);
+    border-radius: 14px 14px 0 0;
+    background: var(--ocean-900);
+    box-shadow: 0 -8px 30px rgba(0, 0, 0, .35);
+  }
+
+  .status-drawer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    min-height: 56px;
+    padding: 10px 0;
+    border: 0;
+    background: transparent;
+    color: var(--aqua);
+    font: 14px var(--mono);
+    cursor: pointer;
+  }
+
+  .status-drawer-toggle:focus-visible {
+    outline: 2px solid var(--aqua-bright);
+    outline-offset: -2px;
+  }
+
+  .status-drawer-summary {
+    flex: 1;
+    min-width: 0;
+    color: var(--paper);
+    text-align: left;
+    font: 20px var(--display);
+  }
+
+  .status-details {
+    max-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    transition: max-height .25s ease, visibility .25s;
+  }
+
+  .status-card[data-open="true"] .status-details {
+    max-height: 60dvh;
+    overflow-y: auto;
+    visibility: visible;
+  }
+
+  .status-details .status-heading {
+    display: none;
+  }
+
+  .status-message {
+    min-height: 0;
+    padding-bottom: 18px;
+  }
+}

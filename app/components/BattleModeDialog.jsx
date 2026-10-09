@@ -59,7 +59,6 @@ export function BattleModeDialog({ open, onClose, onChooseMode }) {
         ref={battleModeDialogRef}
         role="dialog"
       >
-        <span className={`flex items-center gap-[8px] text-muted font-mono text-[18px] tracking-[.13em] ${styles["battle-mode-label"]}`}><i className={styles["pulse-dot"]} />NEW ENGAGEMENT</span>
         <h2 id="battle-mode-title">Choose your battle mode</h2>
         <p>Pick how you want to play this match.</p>
         <div className="mt-[22px] grid grid-cols-2 gap-[10px]">

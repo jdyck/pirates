@@ -29,13 +29,8 @@
   box-shadow: 0 0 12px rgba(130, 219, 206, .35);
 }
 
-.battle-mode-label {
-  color: var(--aqua);
-  font-size: 16px;
-}
-
 .battle-mode-dialog h2 {
-  margin: 12px 0 5px;
+  margin: 0 0 5px;
   color: var(--paper);
   font: 25px/1 var(--display);
   letter-spacing: .025em;
@@ -73,22 +68,4 @@
 .battle-mode-option:focus-visible {
   outline: 2px solid var(--aqua-bright);
   outline-offset: 2px;
-}
-
-.pulse-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--aqua);
-  box-shadow: 0 0 10px rgba(130, 219, 206, .55);
-  animation: pulse 1.6s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: .35;
-  }
 }
