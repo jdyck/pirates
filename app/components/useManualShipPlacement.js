@@ -17,13 +17,8 @@ function cellFromPointer(event) {
     : null;
 }
 
-export function useBoardInteractions({ draggedShip, manualPlacementShip, shots, onPlaceManualShip, disabled }) {
-  const [hoveredCell, setHoveredCell] = useState(null);
+export function useManualShipPlacement({ manualPlacementShip, shots, onPlaceManualShip, disabled }) {
   const [manualDrag, setManualDrag] = useState(null);
-
-  useEffect(() => {
-    if (!draggedShip) setHoveredCell(null);
-  }, [draggedShip]);
 
   useEffect(() => {
     setManualDrag(null);
@@ -52,8 +47,6 @@ export function useBoardInteractions({ draggedShip, manualPlacementShip, shots, 
   }
 
   return {
-    hoveredCell,
-    setHoveredCell,
     manualDrag,
     manualPointerHandlers: {
       onPointerCancel: () => setManualDrag(null),

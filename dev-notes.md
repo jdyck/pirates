@@ -7,7 +7,7 @@ Get the dimensions and responsive layout settled first, then do theming and grap
 - **Sidebar — 769–1400px, outside the stacked rule:** one board with a waters selector beside a 270px sidebar.
 - **Dual board — above 1400px:** both boards beside a 292px sidebar.
 
-Tailwind supports `compact:`, `stacked:`, `sidebar:`, and `dual-board:` for these layouts (e.g. `stacked:flex-col`). Width-only prefixes start at `sm: 641px`, `md: 769px`, `lg: 1101px`, and `xl: 1401px`; use `xl:` instead of `2xl:`. These are defined in `app/globals.css`.
+Tailwind supports `compact:`, `stacked:`, `sidebar:`, and `dual-board:` for these layouts (e.g. `stacked:flex-col`). Width-only prefixes start at `sm: 641px`, `md: 769px`, `lg: 1101px`, and `xl: 1401px`; use `xl:` instead of `2xl:`. These are defined in `tailwind.config.mjs`.
 
 `--waters-max-width` in `app/globals.css` caps boards and stacked fleet panels at **550px**. Cells stay square as the board shrinks.
 

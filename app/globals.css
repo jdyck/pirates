@@ -1,47 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap");
 
-/* Keep the existing reset; Tailwind supplies theme tokens and utilities. */
-
-@layer theme, base, components, utilities;
-
-@import "tailwindcss/theme.css" layer(theme);
-
-@import "tailwindcss/utilities.css" layer(utilities);
-
-@theme {
-  --breakpoint-*: initial;
-  --breakpoint-sm: 641px;
-  --breakpoint-md: 769px;
-  --breakpoint-lg: 1101px;
-  --breakpoint-xl: 1401px;
-}
-
-/* Layout variants include the project's portrait exception. */
-@custom-variant compact (@media (max-width: 640px));
-@custom-variant stacked {
-  @media (max-width: 768px), (orientation: portrait) and (max-width: 1100px) {
-    @slot;
-  }
-}
-@custom-variant sidebar {
-  @media (min-width: 769px) and (max-width: 1400px) and (orientation: landscape), (min-width: 1101px) and (max-width: 1400px) {
-    @slot;
-  }
-}
-@custom-variant dual-board (@media (width > 1400px));
-
-@theme inline {
-  --color-paper: var(--paper);
-  --color-muted: var(--muted);
-  --color-faint: var(--faint);
-  --color-aqua: var(--aqua);
-  --color-aqua-bright: var(--aqua-bright);
-  --color-coral: var(--coral);
-  --color-ocean-950: var(--ocean-950);
-  --font-sans: var(--sans);
-  --font-mono: var(--mono);
-  --font-display: var(--display);
-}
+/* Keep the existing reset; generate Safari 15-compatible utilities. */
+@tailwind utilities;
 
 :root {
   color-scheme: dark;
@@ -81,6 +41,9 @@ body {
   font-family: var(--sans);
   font-size: 13px;
   min-height: 100vh;
+  min-height: 100svh;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
   -webkit-font-smoothing: antialiased;
 }
 

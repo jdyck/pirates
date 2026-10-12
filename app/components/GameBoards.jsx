@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { FLEET } from "../../lib/gameConfig.js";
-import { EnemyWatersBoard, PlacementBoard, YourWatersBoard } from "./Board.jsx";
+import { EnemyWatersBoard, YourWatersBoard } from "./BattleBoard.jsx";
+import { PlacementBoard } from "./PlacementBoard.jsx";
 import { BattleResult } from "./BattleResult.jsx";
 import styles from "./GameBoards.module.css";
 

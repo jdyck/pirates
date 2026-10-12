@@ -7,3 +7,5 @@ npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
 .idea*
+# Generated for each production build
+public/sw.js

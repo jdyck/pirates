@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "Pirates — Battle At Sea",
+  "short_name": "Pirates",
+  "description": "A naval strategy game with VS CPU and manual tabletop modes.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#06111b",
+  "theme_color": "#06111b",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
