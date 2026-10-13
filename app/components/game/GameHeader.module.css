@@ -1,0 +1,24 @@
+.topbar {
+  display: contents;
+}
+
+.brand {
+  position: absolute;
+  left: var(--header-left);
+  top: var(--header-top);
+  width: calc(var(--header-width) * .4);
+  height: var(--header-height);
+}
+
+/* The supplied scene contains the painted logo. Keep its home link accessible. */
+.brand > span {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.brand:focus-visible { outline: 2px solid #fff4cf; }

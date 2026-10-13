@@ -1,0 +1,150 @@
+.status-card {
+  position: absolute;
+  left: var(--status-left);
+  top: var(--status-top);
+  width: var(--status-width);
+  height: var(--status-height);
+  min-width: 0;
+  overflow: auto;
+  color: #613913;
+  scrollbar-width: thin;
+  scrollbar-color: #b76d2e transparent;
+}
+
+.status-details,
+.status-measure {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 100%;
+  padding: 6px 12px;
+  overflow-wrap: anywhere;
+}
+
+.status-measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.status-heading {
+  display: none;
+  color: #96602a;
+  font: 600 12px/1.2 var(--display);
+  letter-spacing: .08em;
+}
+
+.status-drawer-toggle { display: none; }
+.status-drawer-message { display: none; }
+
+.status-title {
+  margin: 0;
+  font: 700 22px/1.1 var(--display);
+}
+
+.status-message {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.25;
+}
+
+.status-card[data-overflow="true"],
+:global([data-game-layout="stacked"]) .status-card,
+:global([data-game-layout="compact"]) .status-card {
+  overflow: visible;
+  z-index: 10;
+}
+
+.status-card[data-overflow="true"] .status-drawer-toggle,
+:global([data-game-layout="stacked"]) .status-drawer-toggle,
+:global([data-game-layout="compact"]) .status-drawer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  min-height: 32px;
+  padding: 0 12px;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: #613913;
+  cursor: pointer;
+  font: 600 14px/1.2 var(--display);
+}
+
+.status-card[data-overflow="true"] .status-drawer-summary,
+:global([data-game-layout="stacked"]) .status-drawer-summary,
+:global([data-game-layout="compact"]) .status-drawer-summary {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.status-drawer-icon {
+  flex-shrink: 0;
+  font: 700 22px/1 var(--sans);
+}
+
+.status-card[data-overflow="true"] .status-drawer-toggle:focus-visible,
+:global([data-game-layout="stacked"]) .status-drawer-toggle:focus-visible,
+:global([data-game-layout="compact"]) .status-drawer-toggle:focus-visible {
+  outline: 2px solid #7c491d;
+  outline-offset: 2px;
+}
+
+.status-card[data-overflow="true"] .status-details,
+:global([data-game-layout="stacked"]) .status-details,
+:global([data-game-layout="compact"]) .status-details { display: none; }
+
+:global([data-game-layout="stacked"]) .status-heading,
+:global([data-game-layout="compact"]) .status-heading { display: block; }
+
+.status-card[data-overflow="true"][data-open="true"] .status-details,
+:global([data-game-layout="stacked"]) .status-card[data-open="true"] .status-details,
+:global([data-game-layout="compact"]) .status-card[data-open="true"] .status-details {
+  display: flex;
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 0;
+  width: max(100%, 220px);
+  min-height: 0;
+  max-height: 40vh;
+  overflow: auto;
+  padding: 16px;
+  gap: 6px;
+  border: 2px solid #af6b2d;
+  border-radius: 8px;
+  background: #fff0c7;
+  box-shadow: 0 8px 24px rgba(80, 35, 5, .3);
+}
+
+/* Narrow desktop panels use the title and disclosure without a second label. */
+.status-card[data-overflow="true"] .status-drawer-toggle > span:first-child { display: none; }
+
+:global([data-game-layout="stacked"]) .status-card .status-drawer-toggle > span:first-child,
+:global([data-game-layout="compact"]) .status-card .status-drawer-toggle > span:first-child { display: inline; }
+
+:global([data-game-layout="stacked"]) .status-card .status-drawer-summary,
+:global([data-game-layout="compact"]) .status-card .status-drawer-summary {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font: 400 16px/1.25 var(--sans);
+}
+
+:global([data-game-layout="stacked"]) .status-drawer-title,
+:global([data-game-layout="compact"]) .status-drawer-title { display: none; }
+
+:global([data-game-layout="stacked"]) .status-drawer-message,
+:global([data-game-layout="compact"]) .status-drawer-message { display: inline; }

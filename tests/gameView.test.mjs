@@ -4,6 +4,7 @@ import { getGameViewState } from '../lib/gameSelectors.js';
 import { chooseComputerTarget } from '../lib/computerTargeting.js';
 import { FLEET } from '../lib/gameConfig.js';
 import { getBattleCellLabel } from '../lib/boardView.js';
+import { gameReducer } from '../lib/game.js';
 
 const game = {
   mode: 'computer', phase: 'placement', selectedShipId: 'carrier',
@@ -29,16 +30,33 @@ test('view state handles loading, deployment, combat, and manual counts', () => 
   assert.equal(combat.ownRemaining, 4);
   const manual = getGameViewState({ ...game, mode: 'manual', phase: 'manual' });
   assert.equal(manual.enemyRemaining, 3);
-  assert.equal(manual.statusTitle, 'WHO GOES FIRST?');
+  assert.equal(manual.statusTitle, 'BATTLE UNDERWAY');
   assert.equal(manual.playerTurn, true);
-  const manualPlayer = getGameViewState({ ...game, mode: 'manual', phase: 'manual', manualTurn: 'player' });
-  assert.equal(manualPlayer.statusTitle, 'YOUR TURN');
-  assert.equal(manualPlayer.playerTurn, true);
-  const manualEnemy = getGameViewState({ ...game, mode: 'manual', phase: 'manual', manualTurn: 'enemy' });
-  assert.equal(manualEnemy.statusTitle, 'ENEMY TURN');
-  assert.equal(manualEnemy.playerTurn, false);
+  for (const type of ['player-fire', 'record-manual-incoming']) {
+    const updated = gameReducer({ ...game, mode: 'manual', phase: 'manual' },
+      { type, target: { x: 8, y: 8 } });
+    assert.equal(getGameViewState(updated).statusTitle, 'BATTLE UNDERWAY');
+    assert.equal(getGameViewState(updated).playerTurn, true);
+  }
   assert.equal(getGameViewState({ ...game, phase: 'computer' }).playerTurn, false);
   assert.equal(getGameViewState({ ...game, phase: 'victory' }).statusTitle, 'BATTLE OVER');
+});
+
+test('status exposes placement feedback and fleet readiness together', () => {
+  assert.equal(getGameViewState(null).statusMessage, 'Preparing your fleet.');
+  assert.equal(getGameViewState(game).statusMessage,
+    'Drag or select to move. Rotate via button or ship end.');
+
+  const selected = gameReducer({ ...game, placementOrientation: 'horizontal' },
+    { type: 'select-ship', shipId: 'carrier' });
+  assert.equal(getGameViewState(selected).statusTitle, 'PLACE FLEET');
+  assert.equal(getGameViewState(selected).statusMessage, 'Move Galleon.');
+
+  const rejected = gameReducer(selected, { type: 'place-selected-ship', start: { x: 9, y: 9 } });
+  assert.equal(getGameViewState(rejected).statusMessage, 'That ship does not fit there.');
+  const placed = gameReducer(rejected, { type: 'place-selected-ship', start: { x: 0, y: 9 } });
+  assert.equal(getGameViewState(placed).statusTitle, 'FLEET READY');
+  assert.equal(getGameViewState(placed).statusMessage, 'Choose Start Battle when ready.');
 });
 
 test('computer targeting returns the only unshot cell and handles an exhausted board', () => {

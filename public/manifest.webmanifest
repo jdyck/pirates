@@ -2,7 +2,7 @@
   "id": "/",
   "name": "Pirates — Battle At Sea",
   "short_name": "Pirates",
-  "description": "A naval strategy game with VS CPU and manual tabletop modes.",
+  "description": "A naval strategy game with VS CPU and vs Person modes.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

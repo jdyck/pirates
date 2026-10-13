@@ -1,9 +1,9 @@
 import "./globals.css";
-import { ServiceWorkerRegistration } from "./components/ServiceWorkerRegistration.jsx";
+import { ServiceWorkerRegistration } from "./components/pwa/ServiceWorkerRegistration.jsx";
 
 export const metadata = {
   title: "Pirates — Battle At Sea",
-  description: "Pirates: Battle At Sea is a naval strategy game with VS CPU and manual tabletop modes.",
+  description: "Pirates: Battle At Sea is a naval strategy game with vs CPU and vs Person modes.",
   applicationName: "Pirates",
   manifest: "/manifest.webmanifest",
   appleWebApp: {

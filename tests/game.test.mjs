@@ -11,7 +11,6 @@ function fixture(mode = 'computer', phase = 'placement') {
     playerShips: FLEET.map((ship, y) => ({ ...ship, horizontal: true, cells: placementCells({ x: 0, y }, ship.length, 'horizontal') })),
     enemyShips: [], playerShots: [], computerShots: [],
     manuallyLostShips: [], computerIntel: { sunkShipLengths: [], sunkHitCells: [] },
-    manualTurn: mode === 'manual' ? 'player' : null,
     selectedShipId: null, placementOrientation: 'horizontal',
   };
 }
@@ -33,34 +32,129 @@ test('manual shots cycle miss, hit, clear without changing another cell', () => 
   const action = { type: 'player-fire', target: { x: 3, y: 7 } };
   game = gameReducer(game, action);
   assert.deepEqual(game.playerShots, [other, { ...action.target, result: 'miss' }]);
+  assert.equal(game.message, 'D8 marked miss.');
   game = gameReducer(game, action);
   assert.deepEqual(game.playerShots, [other, { ...action.target, result: 'hit' }]);
+  assert.equal(game.message, 'D8 marked hit.');
   game = gameReducer(game, action);
   assert.deepEqual(game.playerShots, [other]);
+  assert.equal(game.message, 'D8 cleared.');
   assert.equal(game.phase, 'manual');
 });
 
-test('first manual shot chooses its side and later shots respect the active turn', () => {
+test('combat feedback distinguishes each side, hits, misses, sinking, and battle results', () => {
+  const ships = [
+    { ...FLEET[0], cells: [{ x: 0, y: 0 }, { x: 1, y: 0 }] },
+    { ...FLEET[1], cells: [{ x: 5, y: 5 }] },
+  ];
+  const cases = [
+    { target: { x: 9, y: 9 }, shots: [], player: 'Miss at J10.', enemy: 'Enemy missed at J10.' },
+    { target: { x: 0, y: 0 }, shots: [], player: 'Hit at A1.', enemy: 'Incoming hit at A1.' },
+    { target: { x: 1, y: 0 }, shots: [{ x: 0, y: 0, result: 'hit' }],
+      player: 'Enemy Galleon sunk at B1.', enemy: 'Your Galleon sunk at B1.' },
+    { target: { x: 5, y: 5 }, shots: [{ x: 0, y: 0, result: 'hit' }, { x: 1, y: 0, result: 'hit' }],
+      player: 'You win!', enemy: 'Your fleet was sunk.' },
+  ];
+  for (const side of ['player', 'enemy']) {
+    for (const scenario of cases) {
+      const game = {
+        ...fixture('computer', side === 'player' ? 'player' : 'computer'),
+        playerShips: ships, enemyShips: ships,
+        [side === 'player' ? 'playerShots' : 'computerShots']: scenario.shots,
+      };
+      const action = side === 'player'
+        ? { type: 'player-fire', target: scenario.target }
+        : { type: 'computer-fire', target: scenario.target, gameId: game.id, computerShotsCount: scenario.shots.length };
+      assert.equal(gameReducer(game, action).message, scenario[side]);
+    }
+  }
+});
+
+test('manual shots on either board can be recorded and edited in any order', () => {
   for (const side of ['player', 'enemy']) {
     let game = gameReducer(fixture('manual'), { type: 'start-battle' });
     const outgoing = { type: 'player-fire', target: { x: 9, y: 9 } };
     const incoming = { type: 'record-manual-incoming', target: { x: 8, y: 8 } };
-    assert.equal(game.manualTurn, null);
-    const activeShot = side === 'player' ? outgoing : incoming;
-    const inactiveShot = side === 'player' ? incoming : outgoing;
-    assert.strictEqual(gameReducer(game, { type: 'end-manual-turn', side }), game);
-    game = gameReducer(game, activeShot);
-    assert.equal((side === 'player' ? game.playerShots : game.computerShots).length, 1);
-    assert.equal(game.manualTurn, side);
-    assert.strictEqual(gameReducer(game, inactiveShot), game);
-    assert.strictEqual(gameReducer(game, { type: 'end-manual-turn', side: 'invalid' }), game);
-    game = gameReducer(game, { type: 'end-manual-turn', side });
-    assert.equal(game.manualTurn, side === 'player' ? 'enemy' : 'player');
-    assert.strictEqual(gameReducer(game, activeShot), game);
-    game = gameReducer(game, inactiveShot);
-    assert.equal(game.playerShots.length, 1);
-    assert.equal(game.computerShots.length, 1);
+    const actions = side === 'player' ? [outgoing, incoming] : [incoming, outgoing];
+    assert.equal(game.phase, 'manual');
+    assert.equal(game.message, 'Record shots on either board in any order.');
+    for (const action of actions) {
+      game = gameReducer(game, action);
+      game = gameReducer(game, { ...action, target: { x: 0, y: 0 } });
+    }
+    assert.deepEqual(game.playerShots, [
+      { ...outgoing.target, result: 'miss' }, { x: 0, y: 0, result: 'miss' },
+    ]);
+    assert.deepEqual(game.computerShots, [
+      { ...incoming.target, result: 'miss' }, { x: 0, y: 0, result: 'hit' },
+    ]);
+    game = gameReducer(game, outgoing);
+    assert.equal(game.playerShots[0].result, 'hit');
+    game = gameReducer(game, incoming);
+    assert.deepEqual(game.computerShots, [{ x: 0, y: 0, result: 'hit' }]);
+    game = gameReducer(game, outgoing);
+    assert.deepEqual(game.playerShots, [{ x: 0, y: 0, result: 'miss' }]);
+    assert.equal(game.phase, 'manual');
   }
+});
+
+test('manual enemy ships can be marked after recording an incoming shot', () => {
+  let game = gameReducer(fixture('manual'), { type: 'start-battle' });
+  const ship = FLEET.find((item) => item.id === 'destroyer');
+  const cells = [{ x: 0, y: 9 }, { x: 1, y: 9 }];
+  for (const target of cells) {
+    game = gameReducer(game, { type: 'player-fire', target });
+    game = gameReducer(game, { type: 'player-fire', target });
+  }
+  game = gameReducer(game, { type: 'record-manual-incoming', target: { x: 0, y: 0 } });
+  game = gameReducer(game, { type: 'place-manual-enemy-ship', shipId: ship.id, start: cells[0], end: cells[1] });
+  assert.deepEqual(game.enemyShips.find((item) => item.id === ship.id).cells, cells);
+  assert.deepEqual(game.computerShots, [{ x: 0, y: 0, result: 'hit' }]);
+  assert.equal(game.phase, 'manual');
+});
+
+test('one fleet toggle marks an enemy sunk and arms placement until a valid drag completes', () => {
+  let game = gameReducer(fixture('manual'), { type: 'start-battle' });
+  game.enemyShips = FLEET.map((item) => ({ ...item, cells: [], horizontal: true }));
+  const ship = FLEET.find((item) => item.id === 'destroyer');
+  const cells = [{ x: 0, y: 9 }, { x: 1, y: 9 }];
+  game.playerShots = cells.map((cell) => ({ ...cell, result: 'hit' }));
+  game = gameReducer(game, { type: 'toggle-manual-lost-ship', shipId: ship.id });
+  assert.deepEqual(game.manuallyLostShips, [ship.id]);
+  assert.equal(game.manualPlacementShipId, ship.id);
+  assert.equal(game.message, 'Sloop marked sunk. Drag across 2 connected hit squares for Sloop.');
+
+  game = gameReducer(game, { type: 'place-manual-enemy-ship', shipId: ship.id, start: cells[0], end: { x: 2, y: 9 } });
+  assert.equal(game.manualPlacementShipId, ship.id);
+  assert.deepEqual(game.manuallyLostShips, [ship.id]);
+  assert.deepEqual(game.enemyShips.find((item) => item.id === ship.id).cells, []);
+
+  game = gameReducer(game, { type: 'place-manual-enemy-ship', shipId: ship.id, start: cells[0], end: cells[1] });
+  assert.equal(game.manualPlacementShipId, null);
+  assert.deepEqual(game.manuallyLostShips, [ship.id]);
+  assert.deepEqual(game.enemyShips.find((item) => item.id === ship.id).cells, cells);
+
+  const shots = game.playerShots;
+  game = gameReducer(game, { type: 'toggle-manual-lost-ship', shipId: ship.id });
+  assert.deepEqual(game.manuallyLostShips, []);
+  assert.equal(game.manualPlacementShipId, null);
+  assert.deepEqual(game.enemyShips.find((item) => item.id === ship.id).cells, []);
+  assert.strictEqual(game.playerShots, shots);
+});
+
+test('restoring a pending enemy cancels its drag selection and preserves other sunk ships', () => {
+  let game = gameReducer(fixture('manual'), { type: 'start-battle' });
+  const toggle = (shipId) => ({ type: 'toggle-manual-lost-ship', shipId });
+  game = gameReducer(game, toggle('carrier'));
+  game = gameReducer(game, toggle('destroyer'));
+  assert.equal(game.manualPlacementShipId, 'destroyer');
+  assert.deepEqual(game.manuallyLostShips, ['carrier', 'destroyer']);
+  game = gameReducer(game, toggle('carrier'));
+  assert.equal(game.manualPlacementShipId, 'destroyer');
+  assert.deepEqual(game.manuallyLostShips, ['destroyer']);
+  game = gameReducer(game, toggle('destroyer'));
+  assert.equal(game.manualPlacementShipId, null);
+  assert.deepEqual(game.manuallyLostShips, []);
 });
 
 test('computer shots reject stale games, shot counts, and turns', () => {

@@ -1,0 +1,91 @@
+.board-area,
+.board-deck { display: contents; }
+
+.board-deck > [data-waters] {
+  position: absolute;
+  top: var(--board-top);
+  width: var(--board-width);
+  height: var(--board-height);
+  min-width: 0;
+}
+
+.board-deck > [data-waters="enemy"] { left: var(--enemy-left); }
+.board-deck > [data-waters="your"] {
+  left: var(--your-left);
+  width: var(--your-board-width);
+}
+.waters-switch {
+  --tab-idle-art: url("../../../src/buttons/tab-idle-sidebar.png");
+  --tab-selected-art: url("../../../src/buttons/tab-selected-sidebar.png");
+  display: none;
+}
+
+:global([data-game-layout]:not([data-game-layout="dual"])) .board-deck[data-active-waters="your"] > [data-waters="enemy"],
+:global([data-game-layout]:not([data-game-layout="dual"])) .board-deck[data-active-waters="enemy"] > [data-waters="your"] { display: none; }
+:global([data-game-layout]:not([data-game-layout="dual"])) .waters-switch {
+  position: absolute;
+  left: var(--switch-left);
+  top: var(--switch-top);
+  width: var(--switch-width);
+  height: var(--switch-height);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 3;
+}
+:global([data-game-layout]:not([data-game-layout="dual"])) .waters-switch button {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 100%;
+  min-height: 30px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: #ffe3a3;
+  text-shadow: 0 2px 2px #5b2109;
+  font: 800 clamp(12px, 1.6vw, 19px) var(--sans);
+  letter-spacing: .03em;
+  white-space: nowrap;
+  cursor: pointer;
+}
+:global([data-game-layout="stacked"]) .waters-switch {
+  --tab-idle-art: url("../../../src/buttons/tab-idle-stacked.png");
+  --tab-selected-art: url("../../../src/buttons/tab-selected-stacked.png");
+}
+:global([data-game-layout="compact"]) .waters-switch {
+  --tab-idle-art: url("../../../src/buttons/tab-idle-compact.png");
+  --tab-selected-art: url("../../../src/buttons/tab-selected-compact.png");
+}
+:global([data-game-layout]:not([data-game-layout="dual"])) .waters-switch .waters-tab {
+  --tab-art: var(--tab-idle-art);
+  position: relative;
+  border: 0;
+  padding: 4px 8px;
+  transition: filter .16s;
+}
+.waters-tab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Preserve the painted corners as the tabs resize, including manual mode. */
+  border: 8px solid transparent;
+  border-image: var(--tab-art) 16 fill / 8px / 0 stretch;
+  pointer-events: none;
+}
+.tab-label { position: relative; }
+:global([data-game-layout]:not([data-game-layout="dual"])) .waters-switch .waters-tab[aria-pressed="true"] {
+  --tab-art: var(--tab-selected-art);
+  color: #fff8db;
+}
+.waters-tab:hover { filter: brightness(1.08); }
+.waters-tab:active { filter: brightness(.95); }
+:global([data-game-layout]:not([data-game-layout="dual"])) .waters-switch button:focus-visible {
+  outline: 2px solid #fff8db;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  :global([data-game-layout]:not([data-game-layout="dual"])) .waters-switch button { font-size: 11px; letter-spacing: 0; white-space: nowrap; }
+
+}

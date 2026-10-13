@@ -1,26 +1,27 @@
-@import url("https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@400;500;600;700;800&display=swap");
 
 /* Keep the existing reset; generate Safari 15-compatible utilities. */
 @tailwind utilities;
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   --waters-max-width: 550px;
+  --dual-board-max-width: 495px;
+  --sidebar-board-max-width: 495px;
   --ocean-950: #06111b;
   --ocean-900: #0a1925;
   --ocean-850: #0d202d;
   --ocean-800: #102633;
   --ocean-700: #193744;
-  --line: rgba(153, 190, 196, .15);
-  --line-bright: rgba(153, 190, 196, .27);
-  --paper: #e3ebe7;
-  --muted: #84999c;
-  --faint: #586f75;
-  --aqua: #82dbce;
-  --aqua-bright: #a4f4e4;
+  --line: rgba(111, 57, 14, .18);
+  --line-bright: rgba(111, 57, 14, .4);
+  --paper: #4b260d;
+  --muted: #78491e;
+  --faint: #926034;
+  --aqua: #b77323;
+  --aqua-bright: #683b10;
   --coral: #e47666;
-  --mono: "DM Mono", "SFMono-Regular", Consolas, monospace;
-  --sans: "Manrope", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --sans: "Barlow", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --display: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
 }
 
@@ -29,15 +30,13 @@
 }
 
 html {
-  background: var(--ocean-950);
+  background: #000;
 }
 
 body {
   margin: 0;
   color: var(--paper);
-  background: radial-gradient(ellipse 72% 42% at 49% -8%, rgba(40, 93, 102, .22), transparent 72%),
-    radial-gradient(ellipse 50% 45% at 104% 80%, rgba(30, 73, 83, .1), transparent 75%),
-    var(--ocean-950);
+  background: #000;
   font-family: var(--sans);
   font-size: 13px;
   min-height: 100vh;

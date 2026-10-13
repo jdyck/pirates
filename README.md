@@ -1,6 +1,6 @@
 # Pirates — Battle At Sea
 
-Pirates: Battle At Sea is a naval strategy game built with the Next.js App Router. Choose **VS CPU** to play against the computer, or **Manual Mode** to use one screen as a companion for a physical game. In Manual Mode, place your fleet, record called shots on your waters, cycle enemy-water marks from miss to hit to clear, and map enemy ships beneath matching hit runs.
+Pirates: Battle At Sea is a naval strategy game built with the Next.js App Router. Choose **VS CPU** to play against the computer, or **vs Person** to use one screen as a companion for a physical game. In vs Person, place your fleet, record called shots on your waters, cycle enemy-water marks from miss to hit to clear, and map enemy ships beneath matching hit runs.
 
 ## Run locally
 
@@ -9,7 +9,9 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Drag ships from the fleet list onto your board, or select a ship and click a starting square. Drag placed ships by any block to move them, or click an end block to rotate around it. You can also use **Random Placement** and adjust the result. In VS CPU mode, choose a square on the enemy board to fire; the computer replies after a short delay. In Tabletop mode, click your waters when an opponent calls a coordinate, then mark the verbal result on enemy waters: first click for miss, second for hit, third to clear. Press **MARK** beside an enemy ship in the sidebar, then drag across a straight run of matching hit squares. Its button becomes **CLEAR** after placement; clearing removes the placement while keeping the hit marks. Use **READY/LOST** to track when the ship sinks.
+Open [http://localhost:3000](http://localhost:3000). Drag ships from the fleet list onto your board, or select a ship and click a starting square. Drag placed ships by any block to move them, or click an end block to rotate around it. You can also use **Random Placement** and adjust the result. In VS CPU mode, choose a square on the enemy board to fire; the computer replies after a short delay. In vs Person mode, click your waters when an opponent calls a coordinate, then mark the verbal result on enemy waters: first click for miss, second for hit, third to clear. Click an enemy ship to toggle all its counter markers to sunk and arm placement, then drag across a straight run of matching hit squares on enemy waters. Click the same ship again to restore it and clear its placement while keeping the hit marks. If a drag is invalid, the ship stays selected so you can retry.
+
+While running `npm run dev`, open [the win preview](http://localhost:3000/?preview=win) or [the lose preview](http://localhost:3000/?preview=lose) to inspect either result popup without playing a match. Both run the normal five-second countdown and close automatically; reload to show them again. Use **Close** or **Escape** to dismiss sooner. Preview parameters are ignored in production.
 
 ## Install on iPad (including iPad Air 2)
 
@@ -21,13 +23,27 @@ The production build generates a versioned service worker that caches the game s
 
 Use the latest iPadOS 15 update available to the Air 2. Tailwind 3 and explicit Safari 15.6/iOS 15.6 build targets avoid newer CSS requirements; final hardware verification should cover portrait (768 × 1024), landscape (1024 × 768), touch placement, both game modes, and reopening the Home Screen app in airplane mode after an online load.
 
+## Component organization
+
+Components are grouped by responsibility in `app/components`, with CSS Modules beside the components they style:
+
+- `game/`: page composition (`GameHeader`, `GameBoards`, `GamePanel`) and the new-battle button.
+- `boards/`: board frames, cells, battle and placement boards, and their interaction hooks.
+- `fleet/`: fleet status, deployment controls, and shared ship artwork.
+- `battle/`: mode selection, battle status, and result overlays.
+- `pwa/`: service worker registration.
+
+Page-level hooks (`useGameController` and `useSceneLayout`) live in `app/hooks`. Pure game rules, selectors, geometry, and layout calculations live in `lib`. Import components directly from their owning folder.
+
 ## Styling and graphics
 
 Use Tailwind utilities for layout, spacing, and simple interface styling. Shared colors and fonts are defined in `app/globals.css` and exposed by `tailwind.config.mjs` as utilities such as `text-aqua`, `text-paper`, and `font-display`. Tailwind stays on version 3 for iPadOS 15 compatibility. The existing global reset is retained; Tailwind Preflight is disabled.
 
 `app/page.jsx` composes `GameHeader`, `GameBoards`, `GamePanel`, and `BattleModeDialog`. `GamePanel` selects deployment controls or battle fleets and `BattleStatus`; `GameBoards` owns waters selection and the timed `BattleResult` overlay. Game rules and turn timing remain in `useGameController` and `lib`.
 
-Visual styles live beside their components in CSS Modules. `app/page.module.css` handles the outer layout; `GameBoards.module.css` handles board visibility and sizing; `BattleStatus.module.css` handles the phone drawer; `BattleResult.module.css` handles result overlays. `Board.module.css` covers cells, `ShipSilhouette.module.css` covers SVG artwork, and fleet and deployment styles remain in `GameSidebar.module.css`. The shared `--waters-max-width` variable in `app/globals.css` controls board and stacked fleet widths. Keep effects and animations in the owning component's module, and use inline styles for calculated board coordinates.
+The four scene images in `src` supply the backgrounds, wooden frames, water grids, and painted logo. `lib/sceneLayout.js` chooses a composition using viewport width and height, then centers the complete game assembly while decorative scenery crops. `useSceneLayout` observes resizing, and `app/page.jsx` keeps the image and controls in the same coordinate system. The dual and sidebar boards stop growing at their separate `--dual-board-max-width` and `--sidebar-board-max-width` settings in `app/globals.css` (495px by default). Compact and stacked layouts fit the available space. Very short windows can scroll vertically to keep the game usable.
+
+Visual styles live beside their components in CSS Modules and follow `data-game-layout`. `app/page.module.css` contains the clipped viewport and measured percentage coordinates; `GameBoards.module.css` handles board visibility and switching; `GamePanel.module.css` positions the fleet controls; `BattleStatus.module.css` handles the expandable status strip; `BattleResult.module.css` handles result overlays. `Board.module.css` aligns interactive cells with the painted grids, `ShipSilhouette.module.css` covers SVG ship artwork, and fleet and deployment styles remain in `GameSidebar.module.css`. Keep effects and animations in the owning component's module, and use inline styles for calculated scene and ship coordinates.
 
 See [dev-notes.md](dev-notes.md) for responsive breakpoints, dimensions, board switching, the status drawer, and the files that control them.
 

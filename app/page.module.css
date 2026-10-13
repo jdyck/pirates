@@ -1,34 +1,144 @@
-.command-shell {
+.game-viewport {
+  position: relative;
+  width: 100%;
   min-width: 0;
+  height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  overflow: hidden;
 }
 
-.game-layout {
-  grid-template-columns: minmax(0, 1fr) 292px;
-  gap: 17px;
-  margin-top: 17px;
+.command-shell:not([data-game-layout]) { visibility: hidden; }
+
+/* Coordinates are measured against the complete source artwork. */
+.command-shell {
+  --enemy-left: 18.12%;
+  --your-left: 43.60%;
+  --board-top: 32.20%;
+  --board-width: 23.68%;
+  --your-board-width: var(--board-width);
+  --board-height: 42.40%;
+  --axis-width: 7.58%;
+  --axis-height: 7.52%;
+  --head-top: -9.5%;
+  --head-height: 8%;
+  --header-left: 20.70%;
+  --header-top: 17%;
+  --header-width: 62.30%;
+  --header-height: 9%;
+  --fleet-left: 69.75%;
+  --fleet-top: 29%;
+  --fleet-width: 13.0%;
+  --fleet-height: 35.60%;
+  --status-left: 69.20%;
+  --status-top: 68.70%;
+  --status-width: 14.10%;
+  --status-height: 9.80%;
+  --switch-left: 20.50%;
+  --switch-top: 28%;
+  --switch-width: 33.40%;
+  --switch-height: 4.70%;
+  position: absolute;
+  margin: 0;
+  isolation: isolate;
 }
 
-@media (min-width: 769px) and (max-width: 1400px) {
-  .game-layout {
-    grid-template-columns: minmax(0, 1fr) 270px;
-    gap: 13px;
-  }
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
 }
 
-@media (max-width: 768px), (orientation: portrait) and (max-width: 1100px) {
-  .command-shell[data-has-status="true"] {
-    padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-  }
-
-  .game-layout {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 13px;
-  }
+.scene img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
-@media (max-width: 640px) {
-  .game-layout {
-    gap: 11px;
-    margin-top: 11px;
-  }
+.game-layout { display: contents; }
+
+.command-shell[data-game-layout="sidebar"] {
+  --enemy-left: 20.47%;
+  --your-left: 20.47%;
+  --board-top: 33.49%;
+  --board-width: 33.47%;
+  --your-board-width: var(--board-width);
+  --board-height: 42.96%;
+  --axis-width: 6.82%;
+  --axis-height: 6.21%;
+  --head-top: -14%;
+  --head-height: 11%;
+  --header-left: 21.80%;
+  --header-top: 18%;
+  --header-width: 56.90%;
+  --header-height: 8%;
+  --fleet-left: 57.90%;
+  --fleet-top: calc(30.80% - 8px);
+  --fleet-width: 20.60%;
+  --fleet-height: 32.70%;
+  --status-left: 57%;
+  --status-top: 68.80%;
+  --status-width: 14.50%;
+  --status-height: 9.40%;
+  --switch-left: 20.50%;
+  --switch-top: 28%;
+  --switch-width: 33.40%;
+  --switch-height: 4.20%;
 }
+
+.command-shell[data-game-layout="stacked"] {
+  --enemy-left: 24.31%;
+  --your-left: 24.31%;
+  --board-top: 24.86%;
+  --board-width: 50.92%;
+  --board-height: 34.39%;
+  --axis-width: 5.97%;
+  --axis-height: 6.02%;
+  --head-top: -9%;
+  --head-height: 7%;
+  --header-left: 22.60%;
+  --header-top: 12%;
+  --header-width: 54.50%;
+  --header-height: 5.40%;
+  --fleet-left: 23.80%;
+  --fleet-top: 62.20%;
+  --fleet-width: 54.30%;
+  --fleet-height: 15.20%;
+  --status-left: 20.80%;
+  --status-top: 80.30%;
+  --status-width: 58.40%;
+  --status-height: 2.30%;
+  --switch-left: 24%;
+  --switch-top: 18%;
+  --switch-width: 53%;
+  --switch-height: 3%;
+}
+
+.command-shell[data-game-layout="compact"] {
+  --enemy-left: 18.19%;
+  --your-left: 18.19%;
+  --board-top: 29.74%;
+  --board-width: 63.38%;
+  --board-height: 29.63%;
+  --axis-width: 6.11%;
+  --axis-height: 6.40%;
+  --head-top: -10%;
+  --head-height: 8%;
+  --header-left: 16%;
+  --header-top: 18%;
+  --header-width: 67%;
+  --header-height: 4.80%;
+  --fleet-left: 18.20%;
+  --fleet-top: 61.80%;
+  --fleet-width: 64.60%;
+  --fleet-height: 15.10%;
+  --status-left: 17.20%;
+  --status-top: 79.50%;
+  --status-width: 65.60%;
+  --status-height: 2.10%;
+  --switch-left: 18%;
+  --switch-top: 23.50%;
+  --switch-width: 64%;
+  --switch-height: 2.40%;
+}
+
+.command-shell[data-game-layout="dual"] { --your-board-width: 23.38%; }

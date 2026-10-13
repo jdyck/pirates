@@ -1,0 +1,50 @@
+.game-panel { display: contents; }
+
+.fleet-panel {
+  position: absolute;
+  left: var(--fleet-left);
+  top: var(--fleet-top);
+  width: var(--fleet-width);
+  height: var(--fleet-height);
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+  gap: 12px;
+  overflow: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: #b76d2e transparent;
+}
+
+:global([data-game-layout="sidebar"]) .fleet-panel {
+  height: auto;
+  overflow: visible;
+}
+
+@media (max-width: 640px) {
+  .fleet-panel { gap: 6px; }
+}
+
+.battle-fleet-panel {
+  container-type: inline-size;
+  display: grid;
+  grid-template-rows: repeat(2, minmax(min-content, 1fr));
+  gap: clamp(8px, 6%, 24px);
+}
+
+:global([data-game-layout="dual"]) .battle-fleet-panel,
+:global([data-game-layout="sidebar"]) .battle-fleet-panel,
+:global([data-game-layout="stacked"]) .battle-fleet-panel {
+  grid-template-rows: repeat(2, min-content);
+  align-content: start;
+  gap: 12px;
+}
+
+:global([data-game-layout="stacked"]) .battle-fleet-panel {
+  gap: 20px;
+}
+
+:global([data-game-layout="dual"]) .battle-fleet-panel,
+:global([data-game-layout="sidebar"]) .battle-fleet-panel {
+  gap: 40px;
+}

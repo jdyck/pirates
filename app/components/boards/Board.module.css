@@ -1,0 +1,290 @@
+.board-card {
+  --aqua: #ffe4a0;
+  --aqua-bright: #fff5cf;
+  min-width: 0;
+  position: relative;
+  height: 100%;
+  overflow: visible;
+}
+
+.home-card::after {
+  background: linear-gradient(90deg, transparent, rgba(134, 174, 188, .45), transparent);
+}
+
+.placement-card::after {
+  background: linear-gradient(90deg, transparent, rgba(130, 219, 206, .8), transparent);
+}
+
+.board-card-head {
+  display: flex;
+  position: absolute;
+  top: var(--head-top);
+  height: var(--head-height);
+  left: var(--axis-width);
+  right: 2%;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  text-shadow: 0 1px 2px #642809;
+}
+
+.board-card h2 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(12px, 1.6vw, 22px);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: .015em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.board-frame {
+  --board-gap: 0px;
+  isolation: isolate;
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: var(--axis-width) repeat(10, minmax(0, 1fr));
+  grid-template-rows: var(--axis-height) repeat(10, minmax(0, 1fr));
+  gap: var(--board-gap);
+}
+
+.axis-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff8db;
+  text-shadow: 0 1px 0 #7b451f, 0 2px 2px rgba(54, 22, 7, .85);
+  font: 600 clamp(9px, 1.5vw, 20px) var(--display);
+}
+.board-cell {
+  padding: 0;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+  /* Keep cells out of stacking contexts so markers can sit above the boats. */
+  z-index: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, .4);
+  border-right-width: 0;
+  border-bottom-width: 0;
+  border-radius: 0;
+  background: transparent;
+  transition: background .16s, border-color .16s, box-shadow .16s;
+}
+
+.board-cell.cell-first-row {
+  border-top-width: 0;
+}
+
+.board-cell.cell-first-column {
+  border-left-width: 0;
+}
+
+.board-cell:disabled {
+  opacity: 1;
+  pointer-events: none;
+  cursor: default;
+}
+
+.placement-card .board-cell:not(:disabled) {
+  cursor: crosshair;
+}
+
+.placement-card .board-cell:not(.cell-occupied):not(:disabled):hover {
+  border-color: rgba(130, 219, 206, .66);
+  background: rgba(72, 140, 136, .2);
+}
+
+.placement-card .board-cell.cell-occupied:not(:disabled) {
+  cursor: grab;
+  user-select: none;
+}
+
+.placement-card .board-cell.cell-occupied:not(:disabled):active {
+  cursor: grabbing;
+}
+
+.placement-card .board-cell.cell-ship-end:not(:disabled) {
+  cursor: pointer;
+}
+
+.placement-card .board-cell.cell-ship-end:not(:disabled)::after {
+  content: "↻";
+  position: absolute;
+  z-index: 3;
+  color: var(--aqua-bright);
+  font: 20px/1 var(--sans);
+  opacity: 0;
+  text-shadow: 0 1px 4px var(--ocean-950), 0 0 5px rgba(130, 219, 206, .7);
+  transition: opacity .12s;
+  pointer-events: none;
+}
+
+.placement-card .board-cell.cell-ship-end:not(:disabled):hover::after, .placement-card .board-cell.cell-ship-end:not(:disabled):focus-visible::after {
+  opacity: 1;
+}
+
+.placement-card .board-cell:focus-visible {
+  outline: 2px solid var(--aqua-bright);
+  outline-offset: 1px;
+}
+
+.target-card .board-cell:not(:disabled):hover {
+  border-color: rgba(130, 219, 206, .78);
+  background: rgba(72, 140, 136, .27);
+  box-shadow: inset 0 0 14px rgba(130, 219, 206, .12), 0 0 8px rgba(130, 219, 206, .08);
+}
+
+.target-card .board-cell:not(:disabled):not(.cell-targeted):hover::before,
+.target-card .board-cell:not(:disabled):not(.cell-targeted):focus-visible::before {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: 10%;
+  width: 80%;
+  height: 80%;
+  background: url("../../../src/target.png") center / contain no-repeat;
+  pointer-events: none;
+}
+
+.target-card .board-cell:disabled:not(.cell-targeted) {
+  cursor: default;
+}
+
+.manual-placement-active .board-frame {
+  touch-action: none;
+}
+
+.manual-placement-active .board-cell.cell-hit {
+  cursor: grab;
+}
+
+.manual-placement-active .board-cell.cell-hit:active {
+  cursor: grabbing;
+}
+
+.home-card:not(.placement-card) .board-cell:not(:disabled) {
+  cursor: crosshair;
+}
+
+.home-card:not(.placement-card) .board-cell:not(.cell-occupied):not(:disabled):hover {
+  border-color: rgba(130, 219, 206, .72);
+  background-color: rgba(72, 140, 136, .22);
+}
+
+.home-card:not(.placement-card) .board-cell:focus-visible {
+  outline: 2px solid var(--aqua-bright);
+  outline-offset: 1px;
+}
+
+.board-cell.cell-preview {
+  background: rgba(69, 148, 139, .55);
+  border-color: rgba(164, 244, 228, .85);
+  box-shadow: inset 0 0 12px rgba(164, 244, 228, .16), 0 0 8px rgba(130, 219, 206, .16);
+}
+
+.board-cell.cell-preview-invalid {
+  background: rgba(151, 66, 58, .48);
+  border-color: rgba(228, 118, 102, .85);
+  box-shadow: inset 0 0 10px rgba(228, 118, 102, .13);
+}
+
+.board-cell.cell-hit {
+  background: transparent;
+}
+
+.board-cell.cell-ship-preview-valid {
+  border-color: rgba(164, 244, 228, .9);
+  box-shadow: inset 0 0 12px rgba(130, 219, 206, .22), 0 0 7px rgba(130, 219, 206, .22);
+}
+
+.board-cell.cell-ship-preview-invalid {
+  border-color: rgba(228, 118, 102, .9);
+  box-shadow: inset 0 0 10px rgba(228, 118, 102, .2), 0 0 6px rgba(228, 118, 102, .15);
+}
+
+.target-card .board-cell.cell-sunk-revealed {
+  background: transparent;
+}
+
+.home-card .board-cell.cell-hit {
+  background: transparent;
+  box-shadow: none;
+}
+
+.board-cell.cell-shot-choice::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Only the flashing outline sits above boats and shot markers. */
+  z-index: 4;
+  pointer-events: none;
+  animation: shot-choice-flash 500ms ease-in-out 3;
+}
+
+@keyframes shot-choice-flash {
+  0%, 100% {
+    outline: 2px solid transparent;
+    outline-offset: -2px;
+  }
+  50% {
+    outline: 2px solid var(--aqua-bright);
+    outline-offset: -2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-cell.cell-shot-choice::after {
+    animation: none;
+    outline: 2px solid var(--aqua-bright);
+    outline-offset: -2px;
+  }
+}
+
+.board-cell.cell-miss {
+  background: transparent;
+}
+
+.shot-mark {
+  position: absolute;
+  z-index: 3;
+  inset: 10%;
+  display: block;
+  width: 80%;
+  height: 80%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.cell-miss .shot-mark {
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+:global([data-game-layout="sidebar"]) .board-card-head { top: -7%; height: 6%; pointer-events: none; }
+:global([data-game-layout="sidebar"]) .board-card h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+:global([data-game-layout="sidebar"]) .axis-label {
+  font-size: clamp(11px, 1.7vw, 22px);
+}
+
+:global([data-game-layout="stacked"]) .board-card-head,
+:global([data-game-layout="compact"]) .board-card-head { color: #693d18; text-shadow: none; }
+:global([data-game-layout="stacked"]) .board-card h2,
+:global([data-game-layout="compact"]) .board-card h2 { font-size: clamp(12px, 2.4vw, 20px); }
+:global([data-game-layout="stacked"]) .axis-label,
+:global([data-game-layout="compact"]) .axis-label {
+  font-size: clamp(13px, 2.5vw, 22px);
+  font-weight: 700;
+  line-height: 1;
+}
+:global([data-game-layout="compact"]) .axis-label {
+  font-size: clamp(16px, 3.1vw, 26px);
+}
+:global([data-game-layout="dual"]) .board-card-head { left: 13%; right: 13%; }

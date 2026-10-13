@@ -1,0 +1,77 @@
+.new-battle-button {
+  /* Position the button within the wooden plaque in each source scene. */
+  --action-left: 70.2%;
+  --action-top: 20.51%;
+  --action-width: 12.4%;
+  position: absolute;
+  left: var(--action-left);
+  top: var(--action-top);
+  width: var(--action-width);
+  padding: 0;
+  border: 0;
+  border-radius: 16%;
+  background: transparent;
+  color: #591d06;
+  text-shadow: 0 1px 0 #ffed82;
+  cursor: pointer;
+  container-type: inline-size;
+}
+
+.new-battle-button[data-layout="sidebar"] {
+  --action-left: 63.5%;
+  --action-top: 21.3%;
+  --action-width: 14.5%;
+}
+
+.new-battle-button[data-layout="stacked"] {
+  --action-left: 57%;
+  --action-top: 13.81%;
+  --action-width: 18%;
+}
+
+.new-battle-button[data-layout="compact"] {
+  --action-left: 57%;
+  --action-top: 19.8%;
+  --action-width: 25%;
+}
+
+.button-background {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.button-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .35em;
+  padding-bottom: 2%;
+  font: 800 clamp(12px, 2.2vw, 20px) var(--sans);
+  letter-spacing: .015em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+@supports (font-size: 1cqw) {
+  .button-content { font-size: 9cqw; }
+}
+
+.button-icon {
+  font-family: var(--sans);
+  font-size: 1.35em;
+  line-height: 1;
+}
+
+.new-battle-button:hover:not(:disabled) { filter: brightness(1.08); }
+.new-battle-button:active:not(:disabled) { filter: brightness(.95); }
+.new-battle-button:focus-visible {
+  outline: 2px solid #fff4cf;
+  outline-offset: 2px;
+}
+.new-battle-button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+}

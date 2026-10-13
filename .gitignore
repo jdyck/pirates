@@ -9,3 +9,5 @@ pnpm-debug.log*
 .idea*
 # Generated for each production build
 public/sw.js
+# Browser captures used to verify the supplied artwork
+local/qa/

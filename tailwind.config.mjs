@@ -20,7 +20,7 @@ export default {
         aqua: "var(--aqua)", "aqua-bright": "var(--aqua-bright)",
         coral: "var(--coral)", "ocean-950": "var(--ocean-950)",
       },
-      fontFamily: { sans: "var(--sans)", mono: "var(--mono)", display: "var(--display)" },
+      fontFamily: { sans: "var(--sans)", display: "var(--display)" },
     },
   },
 };

@@ -1,0 +1,29 @@
+.counter {
+  position: relative;
+  display: block;
+  width: calc(var(--counter-size) * var(--counter-scale, 1));
+  justify-self: start;
+  pointer-events: none;
+}
+
+.artwork {
+  position: absolute;
+  inset: 0;
+  background: var(--counter-hull-color, var(--paper));
+  -webkit-mask: var(--counter-artwork) center / 100% 100% no-repeat;
+  mask: var(--counter-artwork) center / 100% 100% no-repeat;
+}
+
+.porthole {
+  position: absolute;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--counter-porthole-color, #f8c887);
+  transform: translate(-50%, -50%);
+}
+
+.hit {
+  position: absolute;
+  height: auto;
+  transform: translate(-50%, -50%);
+}
