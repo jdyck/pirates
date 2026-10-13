@@ -9,6 +9,6 @@
   transform: scale(.98);
   transform-origin: center;
   pointer-events: none;
-  /* Follow the PNG's alpha outline without changing the boat's colors. */
+  /* Follow the artwork's alpha outline without changing the boat's colors. */
   filter: drop-shadow(0 3px 3px rgba(3, 29, 39, 1));
 }

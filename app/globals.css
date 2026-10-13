@@ -5,22 +5,13 @@
 
 :root {
   color-scheme: light;
-  --waters-max-width: 550px;
   --dual-board-max-width: 495px;
   --sidebar-board-max-width: 495px;
   --ocean-950: #06111b;
-  --ocean-900: #0a1925;
-  --ocean-850: #0d202d;
-  --ocean-800: #102633;
-  --ocean-700: #193744;
-  --line: rgba(111, 57, 14, .18);
-  --line-bright: rgba(111, 57, 14, .4);
   --paper: #4b260d;
   --muted: #78491e;
-  --faint: #926034;
   --aqua: #b77323;
   --aqua-bright: #683b10;
-  --coral: #e47666;
   --sans: "Barlow", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --display: "Barlow Condensed", "Arial Narrow", Impact, sans-serif;
 }

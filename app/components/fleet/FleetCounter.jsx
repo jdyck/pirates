@@ -1,8 +1,8 @@
-import twoCells from "../../../src/2cells.svg";
-import threeCells from "../../../src/3cells.svg";
-import fourCells from "../../../src/4cells.svg";
-import fiveCells from "../../../src/5cells.svg";
-import hit from "../../../src/hit.png";
+import twoCells from "../../../src/images/ships/counter-2-cells.svg";
+import threeCells from "../../../src/images/ships/counter-3-cells.svg";
+import fourCells from "../../../src/images/ships/counter-4-cells.svg";
+import fiveCells from "../../../src/images/ships/counter-5-cells.svg";
+import hit from "../../../src/optimized/markers/hit.webp";
 import styles from "./FleetCounter.module.css";
 
 // Dimensions and porthole centers in the supplied SVGs' viewBox coordinates.

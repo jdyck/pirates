@@ -9,68 +9,10 @@
   margin: 0;
 }
 
-.placement-cross {
-  font-size: 14px;
-  line-height: 8px;
-}
-
-.rotate-button {
-  margin-top: 12px;
-  width: 100%;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 9px;
-  border: 1px solid rgba(130, 219, 206, .2);
-  background: rgba(163, 98, 30, .08);
-  color: #4b260d;
-  text-align: left;
-  cursor: pointer;
-  transition: border-color .16s, background .16s;
-}
-
-.rotate-button:hover {
-  border-color: rgba(130, 219, 206, .55);
-  background: rgba(29, 66, 70, .4);
-}
-
-.rotate-button:disabled {
-  opacity: .45;
-  cursor: not-allowed;
-}
-
 .rotate-icon {
   background: currentColor;
-  -webkit-mask: url("../../../src/rotate.svg") center / contain no-repeat;
-  mask: url("../../../src/rotate.svg") center / contain no-repeat;
-}
-
-.rotate-glyph {
-  display: grid;
-  place-items: center;
-  width: 25px;
-  height: 25px;
-  border: 1px solid rgba(130, 219, 206, .28);
-  color: var(--aqua);
-  font: 18px var(--sans);
-}
-
-.rotate-copy small {
-  color: var(--faint);
-  font: 12px var(--display);
-  letter-spacing: .1em;
-}
-
-.rotate-copy strong {
-  font: 16px var(--display);
-  letter-spacing: .08em;
-}
-
-.rotate-hint {
-  margin-left: auto;
-  color: var(--aqua);
-  font: 12px var(--display);
-  letter-spacing: .07em;
+  -webkit-mask: url("../../../src/images/icons/rotate.svg") center / contain no-repeat;
+  mask: url("../../../src/images/icons/rotate.svg") center / contain no-repeat;
 }
 
 .deployment-ship {
@@ -110,15 +52,6 @@
   color: #683b10;
 }
 
-.deployment-ship-selected .fleet-health {
-  border-color: var(--aqua-bright);
-  background: rgba(170, 108, 29, .25);
-}
-
-.deployment-ship:not(.deployment-ship-placed):not(.deployment-ship-selected) .fleet-health i {
-  background: #bb8b4b;
-}
-
 .random-placement,
 .start-battle-button {
   position: relative;
@@ -138,13 +71,13 @@
 }
 
 .random-placement {
-  --button-art: url("../../../src/buttons/random-dual.png");
+  --button-art: url("../../../src/optimized/buttons/random-dual.webp");
   aspect-ratio: 331 / 52;
   color: #032733;
 }
 
 .start-battle-button {
-  --button-art: url("../../../src/buttons/start-dual.png");
+  --button-art: url("../../../src/optimized/buttons/start-dual.webp");
   aspect-ratio: 332 / 61;
   min-height: 34px;
   color: #683b10;
@@ -193,14 +126,14 @@
 
 .random-icon {
   background: currentColor;
-  -webkit-mask: url("../../../src/random.svg") center / contain no-repeat;
-  mask: url("../../../src/random.svg") center / contain no-repeat;
+  -webkit-mask: url("../../../src/images/icons/random.svg") center / contain no-repeat;
+  mask: url("../../../src/images/icons/random.svg") center / contain no-repeat;
 }
 
 .swords-icon {
   background: currentColor;
-  -webkit-mask: url("../../../src/swords.svg") center / contain no-repeat;
-  mask: url("../../../src/swords.svg") center / contain no-repeat;
+  -webkit-mask: url("../../../src/images/icons/swords.svg") center / contain no-repeat;
+  mask: url("../../../src/images/icons/swords.svg") center / contain no-repeat;
 }
 
 .random-placement:hover:not(:disabled),
@@ -219,24 +152,24 @@
 }
 
 :global([data-game-layout="sidebar"]) .random-placement {
-  --button-art: url("../../../src/buttons/random-sidebar.png");
+  --button-art: url("../../../src/optimized/buttons/random-sidebar.webp");
   aspect-ratio: 445 / 57;
 }
 :global([data-game-layout="sidebar"]) .start-battle-button {
-  --button-art: url("../../../src/buttons/start-sidebar.png");
+  --button-art: url("../../../src/optimized/buttons/start-sidebar.webp");
   aspect-ratio: 445 / 70;
 }
 :global([data-game-layout="stacked"]) .random-placement {
-  --button-art: url("../../../src/buttons/random-stacked.png");
+  --button-art: url("../../../src/optimized/buttons/random-stacked.webp");
   aspect-ratio: auto;
 }
 :global([data-game-layout="compact"]) .random-placement {
-  --button-art: url("../../../src/buttons/random-compact.png");
+  --button-art: url("../../../src/optimized/buttons/random-compact.webp");
   aspect-ratio: auto;
 }
 :global([data-game-layout="stacked"]) .start-battle-button,
 :global([data-game-layout="compact"]) .start-battle-button {
-  --button-art: url("../../../src/buttons/start-sidebar.png");
+  --button-art: url("../../../src/optimized/buttons/start-sidebar.webp");
   aspect-ratio: auto;
 }
 
@@ -283,16 +216,6 @@
 :global([data-game-layout="stacked"]) .fleet-count,
 :global([data-game-layout="compact"]) .fleet-count { display: none; }
 
-.fleet-health i.health-hit {
-  background: var(--coral);
-  box-shadow: 0 0 3px rgba(228, 118, 102, .32);
-}
-
-.fleet-row-sunk .fleet-health i {
-  background: var(--coral);
-  box-shadow: 0 0 4px rgba(228, 118, 102, .42);
-}
-
 .fleet-row {
   display: grid;
   grid-template-columns: auto;
@@ -305,40 +228,8 @@
   border-bottom: 0;
 }
 
-.fleet-row > .fleet-health {
-  grid-area: health;
-}
-
 .fleet-row > .fleet-name {
   grid-area: name;
-}
-
-.fleet-graphic {
-  grid-area: graphic;
-  display: block;
-  max-width: 100%;
-  height: 14px;
-  pointer-events: none;
-}
-
-.fleet-row-sunk .fleet-graphic {
-  opacity: .5;
-  filter: saturate(.5);
-}
-
-.fleet-health {
-  flex-shrink: 0;
-  padding: 4px;
-  border: 1px solid var(--aqua);
-  border-radius: 6px;
-  background: rgba(170, 108, 29, .12);
-}
-
-.fleet-health i {
-  display: block;
-  background: #996323;
-  width: 10px;
-  height: 10px;
 }
 
 .fleet-name {
@@ -346,11 +237,6 @@
   font-size: 12px;
   font-family: var(--display);
   text-align: center;
-}
-
-.fleet-row-sunk .fleet-health {
-  border-color: var(--coral);
-  background: rgba(228, 118, 102, .2);
 }
 
 .fleet-row-sunk .fleet-name {
@@ -449,13 +335,6 @@
 .manual-ship-identity { letter-spacing: .02em; }
 .fleet-row { gap: 4px; }
 .fleet-ships { gap: 6px; }
-.fleet-health { padding: 3px; border-color: #b57a36; }
-.fleet-health i { width: 8px; height: 8px; }
-.rotate-copy strong { font-size: 12px; }
-.rotate-copy small { font-size: 9px; }
-.rotate-hint { font-size: 10px; }
-.rotate-button { gap: 4px; margin-top: 8px; padding: 5px; }
-.placement-cross, .rotate-glyph { display: none; }
 
 :global([data-game-layout="stacked"]) .fleet-status:not(.placement-panel),
 :global([data-game-layout="compact"]) .fleet-status:not(.placement-panel) { display: block; }
@@ -465,10 +344,6 @@
 :global([data-game-layout="compact"]) .fleet-ships { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
 :global([data-game-layout="stacked"]) .fleet-name,
 :global([data-game-layout="compact"]) .fleet-name { font-size: 11px; }
-:global([data-game-layout="stacked"]) .fleet-health i,
-:global([data-game-layout="compact"]) .fleet-health i { width: 6px; height: 7px; }
-:global([data-game-layout="stacked"]) .fleet-health,
-:global([data-game-layout="compact"]) .fleet-health { padding: 2px; }
 :global([data-game-layout="stacked"]) .manual-ship-identity,
 :global([data-game-layout="compact"]) .manual-ship-identity { padding: 0; min-width: 0; }
 :global([data-game-layout="stacked"]) .manual-fleet-button,
@@ -481,21 +356,15 @@
 :global([data-game-layout="compact"]) .placement-panel > .fleet-ships { grid-column: 1 / -1; }
 :global([data-game-layout="stacked"]) .placement-panel > .fleet-heading,
 :global([data-game-layout="compact"]) .placement-panel > .fleet-heading { margin: 0; padding-bottom: 3px; }
-:global([data-game-layout="stacked"]) .rotate-button,
 :global([data-game-layout="stacked"]) .random-placement,
 :global([data-game-layout="stacked"]) .start-battle-button,
-:global([data-game-layout="compact"]) .rotate-button,
 :global([data-game-layout="compact"]) .random-placement,
 :global([data-game-layout="compact"]) .start-battle-button { margin-top: 0; }
 :global([data-game-layout="stacked"]) .start-battle-button,
 :global([data-game-layout="compact"]) .start-battle-button { grid-column: 1 / -1; }
-:global([data-game-layout="stacked"]) .rotate-hint,
-:global([data-game-layout="compact"]) .rotate-hint { display: none; }
 
 @media (max-width: 640px) {
   :global([data-game-layout]) .fleet-heading { font-size: 11px; }
-  :global([data-game-layout]) .rotate-copy small { display: none; }
-  :global([data-game-layout]) .rotate-button { min-height: 30px; }
   :global([data-game-layout]) .random-placement,
   :global([data-game-layout]) .start-battle-button { min-height: 30px; padding: 5px 8px; }
   :global([data-game-layout]) .random-placement .deployment-action-content { font-size: 10px; gap: .4em; }
@@ -843,35 +712,6 @@
 :global([data-game-layout="sidebar"]) .deployment-ship:nth-child(-n + 2) {
   flex-basis: calc((100% - 8px) * var(--fleet-counter-ratio) / var(--fleet-large-ratio) - .1px);
 }
-
-.placement-panel .rotate-button {
-  margin-top: 12px;
-  padding: 8px 10px;
-  min-height: 38px;
-  border: 1px solid #b57a36;
-  border-radius: 6px;
-  background: rgba(170, 108, 29, .1);
-  color: var(--paper);
-}
-
-.placement-panel .rotate-button:hover:not(:disabled) {
-  border-color: #683b10;
-  background: rgba(170, 108, 29, .2);
-}
-
-.placement-panel .rotate-button:disabled {
-  opacity: .65;
-  cursor: default;
-}
-
-.placement-panel .rotate-button:focus-visible {
-  outline: 2px solid var(--aqua-bright);
-  outline-offset: 2px;
-}
-
-.placement-panel .rotate-copy strong { font-size: 14px; font-weight: 600; }
-.placement-panel .rotate-copy small { font-size: 10px; }
-.placement-panel .rotate-hint { color: var(--paper); font-size: 13px; font-weight: 600; }
 .placement-panel .random-placement,
 .placement-panel .start-battle-button { margin-top: 8px; }
 
@@ -910,20 +750,7 @@
   font-size: clamp(10px, 3cqw, 14px);
 }
 
-:global([data-game-layout="stacked"]) .placement-panel .rotate-button,
-:global([data-game-layout="compact"]) .placement-panel .rotate-button {
-  min-height: 30px;
-  margin-top: 0;
-  padding: 4px 8px;
-}
-
 :global([data-game-layout="stacked"]) .placement-panel .random-placement,
 :global([data-game-layout="compact"]) .placement-panel .random-placement,
 :global([data-game-layout="stacked"]) .placement-panel .start-battle-button,
 :global([data-game-layout="compact"]) .placement-panel .start-battle-button { margin-top: 0; }
-
-:global([data-game-layout="stacked"]) .placement-panel .rotate-copy small,
-:global([data-game-layout="compact"]) .placement-panel .rotate-copy small { display: none; }
-
-:global([data-game-layout="stacked"]) .placement-panel .rotate-copy strong,
-:global([data-game-layout="compact"]) .placement-panel .rotate-copy strong { font-size: 11px; letter-spacing: .03em; }

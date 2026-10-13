@@ -14,8 +14,18 @@ export const metadata = {
   // Newer Next.js emits only mobile-web-app-capable. iPadOS 15 needs Apple's tag.
   other: { "apple-mobile-web-app-capable": "yes" },
   icons: {
-    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    icon: [
+      { url: "/favicon.ico", sizes: "16x16 32x32 48x48 64x64 128x128 256x256", type: "image/x-icon" },
+      ...[16, 32, 48].map((size) => ({
+        url: `/icons/favicon-${size}x${size}.png`, sizes: `${size}x${size}`, type: "image/png",
+      })),
+    ],
+    apple: [
+      ...[76, 120, 152, 167].map((size) => ({
+        url: `/icons/apple-touch-icon-${size}x${size}.png`, sizes: `${size}x${size}`, type: "image/png",
+      })),
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
 };
 

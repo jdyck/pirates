@@ -12,9 +12,13 @@ async function listFiles(directory) {
 
 const buildId = (await readFile(".next/BUILD_ID", "utf8")).trim();
 const staticFiles = await listFiles(".next/static");
+const manifest = JSON.parse(await readFile("public/manifest.webmanifest", "utf8"));
+const touchAndFaviconFiles = (await readdir("public/icons"))
+  .filter((filename) => /^(apple-touch-icon-|favicon-).*\.png$/.test(filename));
 const precacheUrls = [
-  "/", "/manifest.webmanifest", "/icons/apple-touch-icon.png",
-  "/icons/icon-192.png", "/icons/icon-512.png",
+  "/", "/manifest.webmanifest", "/favicon.ico", "/apple-touch-icon.png",
+  ...manifest.icons.map((icon) => icon.src),
+  ...touchAndFaviconFiles.map((filename) => `/icons/${filename}`),
   ...staticFiles.filter((file) => !file.endsWith(".map"))
     .map((file) => `/_next/static/${path.relative(".next/static", file).split(path.sep).join("/")}`),
 ];

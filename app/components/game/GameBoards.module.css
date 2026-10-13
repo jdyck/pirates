@@ -15,8 +15,8 @@
   width: var(--your-board-width);
 }
 .waters-switch {
-  --tab-idle-art: url("../../../src/buttons/tab-idle-sidebar.png");
-  --tab-selected-art: url("../../../src/buttons/tab-selected-sidebar.png");
+  --tab-idle-art: url("../../../src/optimized/buttons/tab-idle-sidebar.webp");
+  --tab-selected-art: url("../../../src/optimized/buttons/tab-selected-sidebar.webp");
   display: none;
 }
 
@@ -50,12 +50,12 @@
   cursor: pointer;
 }
 :global([data-game-layout="stacked"]) .waters-switch {
-  --tab-idle-art: url("../../../src/buttons/tab-idle-stacked.png");
-  --tab-selected-art: url("../../../src/buttons/tab-selected-stacked.png");
+  --tab-idle-art: url("../../../src/optimized/buttons/tab-idle-stacked.webp");
+  --tab-selected-art: url("../../../src/optimized/buttons/tab-selected-stacked.webp");
 }
 :global([data-game-layout="compact"]) .waters-switch {
-  --tab-idle-art: url("../../../src/buttons/tab-idle-compact.png");
-  --tab-selected-art: url("../../../src/buttons/tab-selected-compact.png");
+  --tab-idle-art: url("../../../src/optimized/buttons/tab-idle-compact.webp");
+  --tab-selected-art: url("../../../src/optimized/buttons/tab-selected-compact.webp");
 }
 :global([data-game-layout]:not([data-game-layout="dual"])) .waters-switch .waters-tab {
   --tab-art: var(--tab-idle-art);

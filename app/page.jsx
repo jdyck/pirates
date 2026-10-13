@@ -10,10 +10,10 @@ import { GameBoards } from "./components/game/GameBoards.jsx";
 import { GamePanel } from "./components/game/GamePanel.jsx";
 import { useSceneLayout } from "./hooks/useSceneLayout.js";
 import styles from "./page.module.css";
-import dualBackground from "../src/bg-dual.png";
-import sidebarBackground from "../src/bg-sidebar.png";
-import stackedBackground from "../src/bg-stacked.png";
-import compactBackground from "../src/bg-compact.png";
+import dualBackground from "../src/optimized/scenes/dual.webp";
+import sidebarBackground from "../src/optimized/scenes/sidebar.webp";
+import stackedBackground from "../src/optimized/scenes/stacked.webp";
+import compactBackground from "../src/optimized/scenes/compact.webp";
 
 const backgrounds = {
   dual: dualBackground, sidebar: sidebarBackground,
@@ -57,9 +57,11 @@ export default function Home() {
           left: framing.sceneLeft, top: framing.sceneTop,
         } : undefined}
       >
-        <picture className={styles["scene"]} aria-hidden="true">
-          <img src={background.src} alt="" width={background.width} height={background.height} />
-        </picture>
+        {framing && (
+          <picture className={styles["scene"]} aria-hidden="true">
+            <img src={background.src} alt="" width={background.width} height={background.height} fetchPriority="high" decoding="async" />
+          </picture>
+        )}
         <GameHeader
           layout={layout}
           disabled={!controller.game}

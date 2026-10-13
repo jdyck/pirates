@@ -1,7 +1,7 @@
-import twoCells from "../../../src/fleet/2.png";
-import threeCells from "../../../src/fleet/3.png";
-import fourCells from "../../../src/fleet/4.png";
-import fiveCells from "../../../src/fleet/5.png";
+import twoCells from "../../../src/optimized/ships/ship-2-cells.webp";
+import threeCells from "../../../src/optimized/ships/ship-3-cells.webp";
+import fourCells from "../../../src/optimized/ships/ship-4-cells.webp";
+import fiveCells from "../../../src/optimized/ships/ship-5-cells.webp";
 
 const fleetArtwork = {
   2: twoCells,

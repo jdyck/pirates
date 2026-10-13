@@ -54,8 +54,10 @@ test("short windows select a fitting composition and preserve playable cells", (
   assert.equal(getSceneLayout(740, 360).layout, "sidebar");
   assert.ok(getSceneLayout(740, 360).viewportHeight > 360);
   const smallTablet = getSceneLayout(768, 1024);
-  const largeTablet = getSceneLayout(1000, 1400);
+  const largeTablet = getSceneLayout(950, 1400);
   assert.equal(smallTablet.layout, "stacked");
   assert.equal(largeTablet.layout, "stacked");
   assert.ok(largeTablet.scale > smallTablet.scale);
+  assert.equal(getSceneLayout(951, 1400).layout, "sidebar");
+  assert.equal(getSceneLayout(1000, 1400).layout, "sidebar");
 });

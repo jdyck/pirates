@@ -148,7 +148,7 @@
   inset: 10%;
   width: 80%;
   height: 80%;
-  background: url("../../../src/target.png") center / contain no-repeat;
+  background: url("../../../src/optimized/markers/target.webp") center / contain no-repeat;
   pointer-events: none;
 }
 

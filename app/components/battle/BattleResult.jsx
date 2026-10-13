@@ -2,10 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import winBackground from "../../../src/you-win.png";
-import winCloseBackground from "../../../src/win-close.png";
-import loseBackground from "../../../src/you-lose.png";
-import loseCloseBackground from "../../../src/lose-close.png";
+import winBackground from "../../../src/optimized/dialogs/victory.webp";
+import winCloseBackground from "../../../src/optimized/buttons/victory-close.webp";
+import loseBackground from "../../../src/optimized/dialogs/defeat.webp";
+import loseCloseBackground from "../../../src/optimized/buttons/defeat-close.webp";
 import styles from "./BattleResult.module.css";
 
 const AUTO_CLOSE_MS = 5000;

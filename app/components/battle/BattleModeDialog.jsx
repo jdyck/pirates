@@ -1,10 +1,10 @@
 "use client";
 
 import styles from "./BattleModeDialog.module.css";
-import chooserBackground from "../../../src/choose-mode.png";
-import blueBackground from "../../../src/v-CPU.png";
-import goldBackground from "../../../src/v-person.png";
-import arrowIcon from "../../../src/arrow-up-right.svg";
+import chooserBackground from "../../../src/optimized/dialogs/mode-selection.webp";
+import blueBackground from "../../../src/optimized/buttons/mode-cpu.webp";
+import goldBackground from "../../../src/optimized/buttons/mode-person.webp";
+import arrowIcon from "../../../src/images/icons/arrow-up-right.svg";
 
 import { useEffect, useRef } from "react";
 

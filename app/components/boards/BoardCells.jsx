@@ -1,9 +1,9 @@
 "use client";
 
 import styles from "./Board.module.css";
-import hitArtwork from "../../../src/hit.png";
-import missArtwork from "../../../src/miss.png";
-import splashArtwork from "../../../src/splash.png";
+import hitArtwork from "../../../src/optimized/markers/hit.webp";
+import missArtwork from "../../../src/optimized/markers/miss.webp";
+import splashArtwork from "../../../src/optimized/markers/splash.webp";
 
 import { FLEET } from "../../../lib/gameConfig.js";
 import { coordinateName } from "../../../lib/boardGeometry.js";

@@ -1,7 +1,7 @@
-import dualBackground from "../../../src/buttons/new-battle-dual.png";
-import sidebarBackground from "../../../src/buttons/new-battle-sidebar.png";
-import stackedBackground from "../../../src/buttons/new-battle-stacked.png";
-import compactBackground from "../../../src/buttons/new-battle-compact.png";
+import dualBackground from "../../../src/optimized/buttons/new-battle-dual.webp";
+import sidebarBackground from "../../../src/optimized/buttons/new-battle-sidebar.webp";
+import stackedBackground from "../../../src/optimized/buttons/new-battle-stacked.webp";
+import compactBackground from "../../../src/optimized/buttons/new-battle-compact.webp";
 import styles from "./NewBattleButton.module.css";
 
 const backgrounds = {
