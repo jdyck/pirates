@@ -6,14 +6,15 @@ export function ShipSilhouette({ ship }) {
   const start = ship.cells[0];
 
   return (
-    <ShipGraphic
-      ship={ship}
-      horizontal={horizontal}
+    <div
+      aria-hidden="true"
       className={styles["ship-silhouette"]}
       style={{
         gridColumn: `${start.x + 2} / span ${horizontal ? ship.length : 1}`,
         gridRow: `${start.y + 2} / span ${horizontal ? 1 : ship.length}`,
       }}
-    />
+    >
+      <ShipGraphic ship={ship} horizontal={horizontal} />
+    </div>
   );
 }

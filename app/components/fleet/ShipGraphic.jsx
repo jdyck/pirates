@@ -25,12 +25,10 @@ export function ShipGraphic({ ship, horizontal = true, className, style }) {
         : `0 0 ${artwork.width} ${artwork.height}`}
       preserveAspectRatio="none"
     >
-      <image
-        href={artwork.src}
-        width={artwork.width}
-        height={artwork.height}
-        transform={horizontal ? `translate(0 ${artwork.width}) rotate(-90)` : undefined}
-      />
+      {/* Safari reliably applies SVG rotation to a group around the image. */}
+      <g transform={horizontal ? `translate(0 ${artwork.width}) rotate(-90)` : undefined}>
+        <image href={artwork.src} width={artwork.width} height={artwork.height} />
+      </g>
     </svg>
   );
 }

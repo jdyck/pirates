@@ -62,4 +62,11 @@ npx playwright install chromium
 npm run test:ui
 ```
 
+Ship sizing and rotation also have WebKit coverage to catch Safari rendering regressions:
+
+```sh
+npx playwright install webkit
+npm run test:ui -- --config playwright.webkit.config.mjs
+```
+
 Playwright starts a development server on port 3000, or uses the existing one. The tests cover delayed turns and reset cancellation, waters selection, shot editing, ship placement, dialog focus and countdowns, and fleet appearance in all four layouts. Computed-style snapshots in `tests/ui/game.spec.mjs-snapshots` were recorded before the refactor. They include platform-specific font measurements; review any new platform baselines or intentional style changes before recording them with `npm run test:ui -- --update-snapshots`.

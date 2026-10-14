@@ -4,11 +4,17 @@
   position: absolute;
   inset: 0;
   margin: 2px;
-  width: calc(100% - 4px);
-  height: calc(100% - 4px);
   transform: scale(.98);
   transform-origin: center;
   pointer-events: none;
   /* Follow the artwork's alpha outline without changing the boat's colors. */
   filter: drop-shadow(0 3px 3px rgba(3, 29, 39, 1));
+}
+
+/* Size an HTML grid-area wrapper first: Safari resolves a positioned SVG's
+   percentage height against the whole board instead of its assigned rows. */
+.ship-silhouette > svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
