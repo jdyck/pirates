@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useWatersSelection } from "../../hooks/useWatersSelection.js";
 import { FLEET } from "../../../lib/gameConfig.js";
 import { EnemyWatersBoard, YourWatersBoard } from "../boards/BattleBoard.jsx";
 import { PlacementBoard } from "../boards/PlacementBoard.jsx";
@@ -9,29 +9,26 @@ import styles from "./GameBoards.module.css";
 
 export function GameBoards({ controller, view }) {
   const {
-    game, computerChoice, playerChoice, draggedShip, manualPlacementShipId,
+    game, computerShotFlash, playerShotFlash, draggedShip, manualPlacementShipId,
     placeShipAt, beginShipDrag, endShipDrag,
     dropDraggedShip, selectShip, rotatePlacedShip, playerFire,
     placeManualEnemyShipAt, recordManualIncoming,
   } = controller;
   const { phase, manualMode, deploymentPhase, playerTurn, selectedShip } = view;
-  const [watersView, setWatersView] = useState(null);
 
   const selectedManualShip = manualMode
     ? FLEET.find((ship) => ship.id === manualPlacementShipId) ?? null
     : null;
 
-  let activeWaters = "enemy";
-  if (deploymentPhase || computerChoice || phase === "computer" || phase === "defeat") {
-    activeWaters = "your";
-  } else if (phase === "player" || phase === "victory") {
-    activeWaters = "enemy";
-  }
-
-  const displayedWaters = selectedManualShip ? "enemy"
-    : watersView?.gameId === game?.id && watersView?.activeWaters === activeWaters
-    ? watersView.waters
-    : activeWaters;
+  const { displayedWaters, inspectWaters } = useWatersSelection({
+    gameId: game?.id,
+    phase,
+    computerShotFlash,
+    manualPlacementActive: Boolean(selectedManualShip),
+  });
+  const enemyInteractionMode = manualMode
+    ? (selectedManualShip ? "place-ship" : "edit-shots")
+    : "fire";
 
   return (
     <div className={styles["board-area"]}>
@@ -42,7 +39,7 @@ export function GameBoards({ controller, view }) {
             className={styles["waters-tab"]}
             type="button"
             aria-pressed={displayedWaters === waters}
-            onClick={() => setWatersView({ gameId: game?.id, activeWaters, waters })}
+            onClick={() => inspectWaters(waters)}
           >
             <span className={styles["tab-label"]}>
               {waters === "enemy" ? "ENEMY WATERS" : "YOUR WATERS"}
@@ -78,9 +75,9 @@ export function GameBoards({ controller, view }) {
         ) : (
           <>
             <EnemyWatersBoard
-              flashingCell={playerChoice}
-              disabled={!playerTurn || !game || Boolean(computerChoice)}
-              allowShotEdits={manualMode}
+              flashingCell={playerShotFlash}
+              disabled={!playerTurn || !game || Boolean(computerShotFlash)}
+              interactionMode={enemyInteractionMode}
               manualPlacementShip={selectedManualShip}
               onPlaceManualShip={placeManualEnemyShipAt}
               revealShips={phase === "defeat"}
@@ -89,9 +86,9 @@ export function GameBoards({ controller, view }) {
               shots={game?.playerShots ?? []}
             />
             <YourWatersBoard
-              flashingCell={computerChoice}
+              flashingCell={computerShotFlash}
               disabled={!manualMode || phase !== "manual" || !game}
-              interactive={manualMode}
+              interactionMode={manualMode ? "record-incoming" : "view"}
               onFire={recordManualIncoming}
               ships={game?.playerShips ?? []}
               shots={game?.computerShots ?? []}

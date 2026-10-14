@@ -23,9 +23,20 @@ Main places to adjust:
 - `app/page.jsx`: image and controls inside the shared scene.
 - `app/components/game/GameBoards.module.css`: board sizing, visibility, waters selector.
 - `app/components/boards/Board.module.css`: cell grid and board headings.
-- `app/components/fleet/GameSidebar.module.css`: fleet/deployment layout.
+- `app/components/fleet/FleetStatus.module.css`: battle fleet and manual ship-row layout.
+- `app/components/fleet/PlacementPanel.module.css`: deployment controls and ship-row layout.
 - `app/components/game/GamePanel.module.css`: fleet panel placement and scrolling.
 - `app/components/battle/BattleStatus.module.css`: painted status area and expandable details.
 - `app/components/game/GameHeader.module.css`: compact header.
 
 Keep composition selection in `lib/sceneLayout.js`; page, boards, sidebar, and status styles follow `data-game-layout`. Check portrait/landscape and both sides of the breakpoints when changing dimensions.
+
+Interaction ownership:
+
+- `app/hooks/useGameController.js`: game commands, initialization, and deployment drag state.
+- `app/hooks/useBattleTiming.js`: CPU thinking delay, 1500ms shot flashes, and 1750ms turn handoffs. Preserve game-id and shot-count guards on delayed actions.
+- `app/hooks/useWatersSelection.js` and `lib/watersSelection.js`: automatic waters selection and inspections scoped to the current game/automatic board. Enemy ship placement temporarily forces enemy waters without clearing an inspection.
+- `app/components/boards/BattleBoard.jsx`: named interaction modes for viewing, firing, editing marks, recording incoming shots, and placing enemy ships. Pointer capture remains in `useManualShipPlacement`.
+- `app/hooks/useDialogFocus.js`: initial button focus, Tab wrapping, Escape, and focus restoration. Each dialog controls its own dismissal and timers.
+
+Run `npm run test:ui` before changing interaction behavior or the fleet CSS. Its fleet snapshots cover deployment, CPU battle, and manual battle in dual, sidebar, stacked, and compact layouts.

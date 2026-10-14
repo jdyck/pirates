@@ -1,0 +1,232 @@
+/* Shared fleet appearance. Layout-specific geometry follows below. */
+.fleet-status {
+  min-width: 0;
+  min-height: 0;
+  margin: 0;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+.fleet-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+  padding-bottom: 4px;
+  border-bottom: 0;
+  color: #4b260d;
+  font-family: var(--sans);
+  font-size: 18px;
+  font-size: var(--fleet-heading-size, 7.5cqw);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: 0;
+  text-align: left;
+}
+
+.fleet-heading-hint {
+  margin-left: auto;
+  text-align: right;
+  white-space: nowrap;
+  font-family: var(--sans);
+  font-size: clamp(11px, .65em, 13px);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.fleet-count {
+  display: none;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.fleet-ships {
+  display: grid;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fleet-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "counter" "name";
+  align-items: center;
+  align-content: center;
+  justify-items: center;
+  min-width: 0;
+  padding: 0;
+  border-bottom: 0;
+  gap: 4px;
+}
+
+.fleet-row > .fleet-name { grid-area: name; }
+.fleet-row-manual { grid-template-areas: "identity"; }
+.fleet-name { color: #68401c; font-family: var(--display); text-align: center; }
+.fleet-row-sunk .fleet-name { text-decoration: none; }
+.battle-counter { grid-area: counter; }
+.manual-fleet-counter { grid-area: health; }
+
+.manual-ship-identity {
+  position: relative;
+  display: grid;
+  grid-area: identity;
+  grid-template-areas: "health" "name";
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  letter-spacing: .02em;
+}
+
+.manual-fleet-button {
+  border: 1px solid #b57a36;
+  border-radius: 6px;
+  background: linear-gradient(180deg, rgba(255, 234, 180, .5), rgba(170, 108, 29, .16));
+  box-shadow: inset 0 1px 0 rgba(255, 247, 215, .65), 0 1px 2px rgba(75, 38, 13, .16);
+  cursor: pointer;
+  color: #683b10;
+  font: inherit;
+  padding: 4px;
+  transition: background .16s, border-color .16s, box-shadow .16s;
+}
+
+.manual-fleet-button:hover {
+  border-color: #683b10;
+  background: linear-gradient(180deg, rgba(255, 234, 180, .75), rgba(170, 108, 29, .28));
+  box-shadow: inset 0 1px 0 rgba(255, 247, 215, .8), 0 2px 4px rgba(75, 38, 13, .22);
+}
+
+.manual-fleet-button[aria-pressed="true"] {
+  border-color: #a34832;
+  background: linear-gradient(180deg, rgba(228, 118, 102, .2), rgba(163, 72, 50, .25));
+  box-shadow: inset 0 1px 3px rgba(112, 43, 27, .2);
+}
+
+.manual-fleet-button[aria-pressed="true"]:hover {
+  border-color: #702b1b;
+  background: linear-gradient(180deg, rgba(228, 118, 102, .32), rgba(163, 72, 50, .35));
+}
+
+.manual-fleet-button:active { box-shadow: inset 0 2px 4px rgba(75, 38, 13, .25); }
+.manual-fleet-button[data-placement-active="true"],
+.manual-fleet-button:focus-visible { outline: 2px solid var(--aqua-bright); outline-offset: 2px; }
+
+/* Wide panels: two large ships above three smaller ships. */
+:global([data-game-layout="dual"]) .fleet-status,
+:global([data-game-layout="sidebar"]) .fleet-status { flex: 1; }
+:global([data-game-layout="dual"]) .fleet-status { --counter-scale: .92; }
+:global([data-game-layout="sidebar"]) .fleet-status {
+  --counter-scale: .74;
+  --fleet-heading-size: 6.5cqw;
+  --fleet-name-size: 5cqw;
+}
+
+:global([data-game-layout="dual"]) .fleet-heading > span:first-child,
+:global([data-game-layout="sidebar"]) .fleet-heading > span:first-child { white-space: nowrap; }
+:global([data-game-layout="dual"]) .fleet-heading-hint,
+:global([data-game-layout="sidebar"]) .fleet-heading-hint { min-width: 0; white-space: normal; }
+
+:global([data-game-layout="dual"]) .fleet-ships,
+:global([data-game-layout="sidebar"]) .fleet-ships {
+  min-height: min-content;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: repeat(2, max-content);
+}
+
+:global([data-game-layout="dual"]) .fleet-row,
+:global([data-game-layout="sidebar"]) .fleet-row { grid-column: span 2; --counter-slot-scale: 1.5; }
+:global([data-game-layout="dual"]) .fleet-row:nth-child(-n + 2),
+:global([data-game-layout="sidebar"]) .fleet-row:nth-child(-n + 2) { grid-column: span 3; --counter-slot-scale: 1; }
+
+:global([data-game-layout="dual"]) .fleet-row:not(.fleet-row-manual),
+:global([data-game-layout="sidebar"]) .fleet-row:not(.fleet-row-manual) {
+  /* Match the enemy button's horizontal inset without vertical padding. */
+  min-height: 0;
+  padding: 0 5px;
+}
+
+:global([data-game-layout="dual"]) .battle-counter,
+:global([data-game-layout="sidebar"]) .battle-counter {
+  justify-self: center;
+  width: calc(var(--counter-size) * var(--counter-scale) * var(--counter-slot-scale));
+  max-width: 100%;
+}
+
+:global([data-game-layout="dual"]) .fleet-name,
+:global([data-game-layout="sidebar"]) .fleet-name {
+  justify-self: center;
+  color: #4b260d;
+  font-size: 14px;
+  font-size: clamp(11px, var(--fleet-name-size, 6cqw), 16px);
+  font-weight: 600;
+  line-height: 1;
+}
+
+:global([data-game-layout="dual"]) .manual-fleet-button,
+:global([data-game-layout="sidebar"]) .manual-fleet-button {
+  gap: 4px;
+  min-height: 44px;
+  height: 100%;
+  align-content: center;
+}
+
+/* Sidebar uses proportional flex rows rather than the dual layout's grid. */
+:global([data-game-layout="sidebar"]) .fleet-heading { margin-bottom: 2px; padding-bottom: 2px; }
+:global([data-game-layout="sidebar"]) .fleet-ships { display: flex; }
+:global([data-game-layout="sidebar"]) .fleet-row {
+  /* Leave room for fractional-pixel rounding, then grow to fill each row. */
+  flex: var(--fleet-counter-ratio) 1 calc((100% - 16px) * var(--fleet-counter-ratio) / var(--fleet-small-ratio) - .1px);
+}
+:global([data-game-layout="sidebar"]) .fleet-row:nth-child(-n + 2) {
+  flex-basis: calc((100% - 8px) * var(--fleet-counter-ratio) / var(--fleet-large-ratio) - .1px);
+}
+:global([data-game-layout="sidebar"]) .battle-counter { width: 100%; }
+
+/* Narrow panels: one proportional row of ships per fleet. */
+:global([data-game-layout="stacked"]) .fleet-status,
+:global([data-game-layout="compact"]) .fleet-status {
+  --fleet-heading-size: clamp(18px, 4cqw, 22px);
+  width: 100%;
+  max-width: none;
+  align-self: center;
+  justify-content: center;
+  align-items: stretch;
+  gap: 0;
+}
+
+:global([data-game-layout="stacked"]) .fleet-heading,
+:global([data-game-layout="compact"]) .fleet-heading { flex: 0 0 min-content; }
+:global([data-game-layout="stacked"]) .fleet-ships,
+:global([data-game-layout="compact"]) .fleet-ships {
+  display: flex;
+  flex-wrap: nowrap;
+  min-width: 0;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+:global([data-game-layout="stacked"]) .fleet-row,
+:global([data-game-layout="compact"]) .fleet-row { flex: var(--fleet-counter-ratio) 1 0; }
+:global([data-game-layout="stacked"]) .fleet-row:not(.fleet-row-manual),
+:global([data-game-layout="compact"]) .fleet-row:not(.fleet-row-manual) { padding: 0 5px; }
+:global([data-game-layout="stacked"]) .battle-counter,
+:global([data-game-layout="compact"]) .battle-counter { width: 100%; }
+
+:global([data-game-layout="stacked"]) .fleet-name,
+:global([data-game-layout="compact"]) .fleet-name { font-size: 16px; font-weight: 600; white-space: nowrap; }
+:global([data-game-layout="stacked"]) .fleet-name { font-size: clamp(10px, 2.8cqw, 16px); }
+:global([data-game-layout="stacked"]) .manual-fleet-button,
+:global([data-game-layout="compact"]) .manual-fleet-button { gap: 5px; min-height: 28px; }
+
+@media (max-width: 640px) {
+  :global([data-game-layout]) .manual-fleet-button { gap: 2px; min-height: 24px; }
+}

@@ -57,8 +57,9 @@ export function PlacementCell({
 
 export function BattleCell({
   x, y, shot, ship, isTarget, revealShips, sunkEnemyShip, className, disabled,
-  allowShotEdits, manualPlacementShip, interactive, isFlashing = false, onFire,
+  interactionMode, manualPlacementShip, isFlashing = false, onFire,
 }) {
+  const allowShotEdits = interactionMode === "edit-shots" || interactionMode === "place-ship";
   const label = getBattleCellLabel({ x, y, shot, ship, isTarget, revealShips, sunkEnemyShip, allowShotEdits, manualPlacementShip });
   const artwork = shot?.result === "hit" ? hitArtwork : isFlashing ? splashArtwork : missArtwork;
   const contents = shot ? (
@@ -72,7 +73,7 @@ export function BattleCell({
       draggable={false}
     />
   ) : null;
-  if (!isTarget && !interactive) {
+  if (!isTarget && interactionMode === "view") {
     return <div aria-label={label} className={className} role="img">{contents}</div>;
   }
   return (
@@ -82,8 +83,8 @@ export function BattleCell({
       data-board-cell={isTarget ? true : undefined}
       data-board-x={isTarget ? x : undefined}
       data-board-y={isTarget ? y : undefined}
-      disabled={disabled || (isTarget && Boolean(shot) && !allowShotEdits)}
-      onClick={() => { if (!manualPlacementShip) onFire({ x, y }); }}
+      disabled={disabled || interactionMode === "view" || (isTarget && Boolean(shot) && !allowShotEdits)}
+      onClick={() => { if (interactionMode !== "place-ship") onFire({ x, y }); }}
       type="button"
     >
       {contents}

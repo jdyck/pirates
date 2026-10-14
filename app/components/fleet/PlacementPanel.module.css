@@ -1,0 +1,238 @@
+/* Deployment appearance; scene-specific arrangements follow below. */
+.placement-panel {
+  min-width: 0;
+  margin: 0;
+  padding: 0 3px;
+  border: 0;
+  background: transparent;
+}
+
+.fleet-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--paper);
+  font: 800 18px / 1.1 var(--sans);
+  font-size: clamp(16px, 6.5cqw, 22px);
+  letter-spacing: 0;
+  margin-bottom: 6px;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.deployment-count {
+  flex-shrink: 0;
+  padding: 3px 6px;
+  border: 1px solid #b57a36;
+  border-radius: 5px;
+  color: var(--muted);
+  font: 600 12px / 1 var(--sans);
+  font-variant-numeric: tabular-nums;
+}
+
+.deployment-help { margin: 0 0 10px; color: var(--muted); font: 400 12px / 1.4 var(--sans); }
+.fleet-ships { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 6px; }
+.fleet-row { display: grid; justify-items: center; min-width: 0; }
+
+.deployment-ship {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "counter" "name" "status";
+  align-content: center;
+  gap: 3px;
+  min-height: 44px;
+  padding: 5px;
+  border: 1px solid #b57a36;
+  border-radius: 6px;
+  background: rgba(170, 108, 29, .1);
+  box-shadow: inset 0 1px 0 rgba(255, 247, 215, .65), 0 1px 2px rgba(75, 38, 13, .12);
+  cursor: grab;
+  user-select: none;
+  transition: background .16s, border-color .16s, box-shadow .16s;
+}
+
+.deployment-ship:active { cursor: grabbing; }
+.deployment-ship:hover { border-color: #683b10; background: rgba(170, 108, 29, .2); color: #4b260d; }
+.deployment-ship-selected { color: #683b10; }
+.deployment-ship-selected,
+.deployment-ship-selected:hover {
+  border-color: #683b10;
+  background: rgba(241, 182, 43, .35);
+  box-shadow: inset 0 0 0 1px #683b10, 0 1px 2px rgba(75, 38, 13, .16);
+}
+.deployment-ship:focus-visible { outline: 2px solid var(--aqua-bright); outline-offset: 3px; }
+
+.deployment-counter { grid-area: counter; width: 100%; justify-self: center; }
+.fleet-name {
+  grid-area: name;
+  color: var(--paper);
+  font: 600 14px / 1.1 var(--display);
+  font-size: clamp(11px, 5cqw, 16px);
+  text-align: center;
+}
+.deployment-ship-status { grid-area: status; color: var(--muted); font: 500 10px / 1.1 var(--sans); }
+.deployment-ship-selected .deployment-ship-status { color: var(--paper); font-weight: 700; }
+
+/* Painted action buttons, including Safari 15 font-size fallbacks. */
+.random-placement,
+.start-battle-button {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 32px;
+  margin-top: 8px;
+  padding: 7px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  container-type: inline-size;
+  transition: filter .16s;
+}
+
+.random-placement {
+  --button-art: url("../../../src/optimized/buttons/random-dual.webp");
+  aspect-ratio: 331 / 52;
+  color: #032733;
+}
+.start-battle-button {
+  --button-art: url("../../../src/optimized/buttons/start-dual.webp");
+  aspect-ratio: 332 / 61;
+  min-height: 34px;
+  color: #683b10;
+  text-shadow: 0 1px 0 #ffed82;
+}
+.random-placement::before,
+.start-battle-button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Keep the painted corners intact when a layout needs a wider button. */
+  border: 12px solid transparent;
+  border-image: var(--button-art) 16 fill / 12px / 0 stretch;
+  pointer-events: none;
+}
+
+.deployment-action-content {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .65em;
+  font: 800 clamp(11px, 1.2vw, 20px) var(--sans);
+  letter-spacing: .015em;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.start-battle-button .deployment-action-content { font-size: clamp(13px, 1.6vw, 28px); }
+@supports (font-size: 1cqw) {
+  .random-placement .deployment-action-content { font-size: clamp(10px, 6.5cqw, 20px); }
+  .start-battle-button .deployment-action-content { font-size: clamp(12px, 8.5cqw, 28px); }
+}
+
+.deployment-action-icon { display: block; flex: 0 0 auto; width: 1.1em; height: 1.1em; }
+.rotate-icon {
+  background: currentColor;
+  -webkit-mask: url("../../../src/images/icons/rotate.svg") center / contain no-repeat;
+  mask: url("../../../src/images/icons/rotate.svg") center / contain no-repeat;
+}
+.random-icon {
+  background: currentColor;
+  -webkit-mask: url("../../../src/images/icons/random.svg") center / contain no-repeat;
+  mask: url("../../../src/images/icons/random.svg") center / contain no-repeat;
+}
+.swords-icon {
+  background: currentColor;
+  -webkit-mask: url("../../../src/images/icons/swords.svg") center / contain no-repeat;
+  mask: url("../../../src/images/icons/swords.svg") center / contain no-repeat;
+}
+
+.random-placement:hover:not(:disabled),
+.start-battle-button:hover:not(:disabled) { filter: brightness(1.08); }
+.random-placement:active:not(:disabled),
+.start-battle-button:active:not(:disabled) { filter: brightness(.95); }
+.random-placement:focus-visible,
+.start-battle-button:focus-visible { outline: 2px solid var(--aqua-bright); outline-offset: 2px; }
+.random-placement:disabled,
+.start-battle-button:disabled { opacity: .48; cursor: not-allowed; }
+
+/* Wide panels: two large ships above three smaller ships. */
+:global([data-game-layout="dual"]) .fleet-ships,
+:global([data-game-layout="sidebar"]) .fleet-ships { align-items: stretch; gap: 8px; }
+:global([data-game-layout="dual"]) .deployment-ship,
+:global([data-game-layout="sidebar"]) .deployment-ship {
+  flex: var(--fleet-counter-ratio) 1 calc((100% - 16px) * var(--fleet-counter-ratio) / var(--fleet-small-ratio) - .1px);
+}
+:global([data-game-layout="dual"]) .deployment-ship:nth-child(-n + 2),
+:global([data-game-layout="sidebar"]) .deployment-ship:nth-child(-n + 2) {
+  flex-basis: calc((100% - 8px) * var(--fleet-counter-ratio) / var(--fleet-large-ratio) - .1px);
+}
+:global([data-game-layout="sidebar"]) .random-placement {
+  --button-art: url("../../../src/optimized/buttons/random-sidebar.webp");
+  aspect-ratio: 445 / 57;
+}
+:global([data-game-layout="sidebar"]) .start-battle-button {
+  --button-art: url("../../../src/optimized/buttons/start-sidebar.webp");
+  aspect-ratio: 445 / 70;
+}
+
+/* Narrow panels: one row of ships, two actions, then the start button. */
+:global([data-game-layout="stacked"]) .placement-panel,
+:global([data-game-layout="compact"]) .placement-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  width: 100%;
+  max-width: none;
+  align-self: center;
+}
+:global([data-game-layout="stacked"]) .fleet-heading,
+:global([data-game-layout="compact"]) .fleet-heading {
+  grid-column: 1 / -1;
+  font-size: 14px;
+  font-size: clamp(14px, 4cqw, 20px);
+  margin: 0;
+}
+:global([data-game-layout="stacked"]) .deployment-help,
+:global([data-game-layout="compact"]) .deployment-help,
+:global([data-game-layout="stacked"]) .deployment-ship-status,
+:global([data-game-layout="compact"]) .deployment-ship-status { display: none; }
+:global([data-game-layout="stacked"]) .fleet-ships,
+:global([data-game-layout="compact"]) .fleet-ships {
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  flex-wrap: nowrap;
+}
+:global([data-game-layout="stacked"]) .deployment-ship,
+:global([data-game-layout="compact"]) .deployment-ship {
+  flex: var(--fleet-counter-ratio) 1 0;
+  grid-template-areas: "counter" "name";
+  min-height: 36px;
+  padding: 4px 3px;
+}
+:global([data-game-layout="stacked"]) .fleet-name,
+:global([data-game-layout="compact"]) .fleet-name {
+  font-size: 11px;
+  font-size: clamp(10px, 3cqw, 14px);
+}
+:global([data-game-layout="stacked"]) .random-placement,
+:global([data-game-layout="stacked"]) .start-battle-button,
+:global([data-game-layout="compact"]) .random-placement,
+:global([data-game-layout="compact"]) .start-battle-button { margin-top: 0; aspect-ratio: auto; }
+:global([data-game-layout="stacked"]) .random-placement { --button-art: url("../../../src/optimized/buttons/random-stacked.webp"); }
+:global([data-game-layout="compact"]) .random-placement { --button-art: url("../../../src/optimized/buttons/random-compact.webp"); }
+:global([data-game-layout="stacked"]) .start-battle-button,
+:global([data-game-layout="compact"]) .start-battle-button {
+  --button-art: url("../../../src/optimized/buttons/start-sidebar.webp");
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+  :global([data-game-layout]) .random-placement,
+  :global([data-game-layout]) .start-battle-button { min-height: 30px; padding: 5px 8px; }
+  :global([data-game-layout]) .random-placement .deployment-action-content { font-size: 10px; gap: .4em; }
+  :global([data-game-layout]) .start-battle-button .deployment-action-content { font-size: 14px; }
+}

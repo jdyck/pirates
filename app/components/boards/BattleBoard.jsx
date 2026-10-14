@@ -7,24 +7,28 @@ import { BattleCell } from "./BoardCells.jsx";
 import { ShipSilhouette } from "../fleet/ShipSilhouette.jsx";
 import { useManualShipPlacement } from "./useManualShipPlacement.js";
 
+// view: inspect only; fire: one shot per cell; edit-shots: cycle miss/hit/clear;
+// record-incoming: toggle the opponent's called shot; place-ship: drag hit cells.
 function BattleBoard({
-  title, isTarget = false, ships, shots = [], disabled, interactive = false,
-  allowShotEdits = false, manualPlacementShip, onPlaceManualShip, revealShips = false,
+  title, waters, ships, shots = [], disabled, interactionMode = "view",
+  manualPlacementShip, onPlaceManualShip, revealShips = false,
   onFire, flashingCell,
 }) {
+  const isTarget = waters === "enemy";
+  const placementShip = interactionMode === "place-ship" ? manualPlacementShip : null;
   const { manualDrag, manualPointerHandlers } = useManualShipPlacement({
-    manualPlacementShip, shots, onPlaceManualShip, disabled,
+    manualPlacementShip: placementShip, shots, onPlaceManualShip, disabled,
   });
-  const preview = getManualPlacementPreview({ ships, shots, manualPlacementShip, manualDrag });
+  const preview = getManualPlacementPreview({ ships, shots, manualPlacementShip: placementShip, manualDrag });
   const rows = getBoardRows({ ships, shots, isTarget, preview, flashingCell });
   const visibleShips = getVisibleShips({ ships, shots, isTarget, revealShips });
 
   return (
-    <div data-waters={isTarget ? "enemy" : "your"}>
+    <div data-waters={waters}>
       <Board
         title={title}
         variant={isTarget ? "target" : "home"}
-        manualPlacementActive={Boolean(manualPlacementShip)}
+        manualPlacementActive={Boolean(placementShip)}
         frameHandlers={manualPointerHandlers}
       >
         {visibleShips.map((ship) => <ShipSilhouette key={ship.id} ship={ship} />)}
@@ -43,9 +47,8 @@ function BattleBoard({
             isTarget={isTarget}
             revealShips={revealShips}
             disabled={disabled}
-            interactive={interactive}
-            allowShotEdits={allowShotEdits}
-            manualPlacementShip={manualPlacementShip}
+            interactionMode={interactionMode}
+            manualPlacementShip={placementShip}
             onFire={onFire}
           />
         )} />
@@ -55,9 +58,9 @@ function BattleBoard({
 }
 
 export function EnemyWatersBoard(props) {
-  return <BattleBoard {...props} title="Enemy waters" isTarget />;
+  return <BattleBoard {...props} title="Enemy waters" waters="enemy" />;
 }
 
 export function YourWatersBoard(props) {
-  return <BattleBoard {...props} title="Your waters" isTarget={false} />;
+  return <BattleBoard {...props} title="Your waters" waters="your" />;
 }

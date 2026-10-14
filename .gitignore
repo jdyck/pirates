@@ -11,3 +11,5 @@ pnpm-debug.log*
 public/sw.js
 # Browser captures used to verify the supplied artwork
 local/qa/
+playwright-report/
+test-results/

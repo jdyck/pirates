@@ -1,5 +1,6 @@
 import { FLEET } from "../../../lib/gameConfig.js";
-import { FleetStatus, PlacementPanel } from "../fleet/GameSidebar.jsx";
+import { FleetStatus } from "../fleet/FleetStatus.jsx";
+import { PlacementPanel } from "../fleet/PlacementPanel.jsx";
 import { BattleStatus } from "../battle/BattleStatus.jsx";
 import styles from "./GamePanel.module.css";
 

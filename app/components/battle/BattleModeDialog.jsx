@@ -6,46 +6,13 @@ import blueBackground from "../../../src/optimized/buttons/mode-cpu.webp";
 import goldBackground from "../../../src/optimized/buttons/mode-person.webp";
 import arrowIcon from "../../../src/images/icons/arrow-up-right.svg";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useDialogFocus } from "../../hooks/useDialogFocus.js";
 
 export function BattleModeDialog({ open, onClose, onChooseMode }) {
   const battleModeDialogRef = useRef(null);
 
-  useEffect(() => {
-    if (!open) return undefined;
-
-    const previousFocus = document.activeElement;
-    const firstOption = battleModeDialogRef.current?.querySelector("button");
-    firstOption?.focus();
-
-    function handleDialogKeyDown(event) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (event.key !== "Tab") return;
-      const options = battleModeDialogRef.current?.querySelectorAll("button:not(:disabled)");
-      const first = options?.[0];
-      const last = options?.[options.length - 1];
-      if (!first || !last) return;
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    window.addEventListener("keydown", handleDialogKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleDialogKeyDown);
-      if (previousFocus instanceof HTMLElement) previousFocus.focus();
-    };
-  }, [open, onClose]);
+  useDialogFocus({ open, dialogRef: battleModeDialogRef, onClose });
 
   if (!open) return null;
 

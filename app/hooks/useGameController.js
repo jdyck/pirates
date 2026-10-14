@@ -2,17 +2,13 @@
 
 import { useEffect, useReducer, useRef, useState } from "react";
 import { createFleet, createGame, gameReducer } from "../../lib/game.js";
-import { chooseComputerTarget } from "../../lib/computerTargeting.js";
+import { useBattleTiming } from "./useBattleTiming.js";
 import { getShot } from "../../lib/boardGeometry.js";
-
-const SHOT_FLASH_MS = 1500;
-const TURN_TRANSITION_MS = SHOT_FLASH_MS + 250;
 
 export function useGameController() {
   const [game, dispatch] = useReducer(gameReducer, null);
   const [draggedShip, setDraggedShip] = useState(null);
-  const [computerChoice, setComputerChoice] = useState(null);
-  const [playerChoice, setPlayerChoice] = useState(null);
+  const { computerShotFlash, playerShotFlash, flashPlayerShot, clearShotFlashes } = useBattleTiming(game, dispatch);
   const gameSequenceRef = useRef(0);
 
   useEffect(() => {
@@ -20,53 +16,8 @@ export function useGameController() {
     dispatch({ type: "reset", game: createGame("computer", gameSequenceRef.current) });
   }, []);
 
-  useEffect(() => {
-    if (!game || game.phase !== "computer") return undefined;
-
-    if (game.computerNextPhase) {
-      const timeout = window.setTimeout(() => {
-        dispatch({ type: "end-computer-turn", gameId: game.id, computerShotsCount: game.computerShots.length });
-      }, TURN_TRANSITION_MS);
-      return () => window.clearTimeout(timeout);
-    }
-
-    const timeout = window.setTimeout(() => {
-      const target = chooseComputerTarget(game);
-      if (target) setComputerChoice({ ...target, gameId: game.id });
-      dispatch({
-        type: "computer-fire",
-        gameId: game.id,
-        computerShotsCount: game.computerShots.length,
-        target,
-      });
-    }, 500);
-
-    return () => window.clearTimeout(timeout);
-  }, [game]);
-
-  useEffect(() => {
-    if (!computerChoice) return undefined;
-    const timeout = window.setTimeout(() => setComputerChoice(null), SHOT_FLASH_MS);
-    return () => window.clearTimeout(timeout);
-  }, [computerChoice]);
-
-  useEffect(() => {
-    if (!playerChoice) return undefined;
-    const timeout = window.setTimeout(() => setPlayerChoice(null), SHOT_FLASH_MS);
-    return () => window.clearTimeout(timeout);
-  }, [playerChoice]);
-
-  useEffect(() => {
-    if (!game || game.phase !== "player" || !game.playerNextPhase) return undefined;
-    const timeout = window.setTimeout(() => {
-      dispatch({ type: "end-player-turn", gameId: game.id, playerShotsCount: game.playerShots.length });
-    }, TURN_TRANSITION_MS);
-    return () => window.clearTimeout(timeout);
-  }, [game]);
-
   function beginNewBattle(mode) {
-    setComputerChoice(null);
-    setPlayerChoice(null);
+    clearShotFlashes();
     setDraggedShip(null);
     gameSequenceRef.current += 1;
     dispatch({ type: "reset", game: createGame(mode, gameSequenceRef.current) });
@@ -122,10 +73,10 @@ export function useGameController() {
   }
 
   function playerFire(target) {
-    if (!game || (game.phase !== "player" && game.phase !== "manual") || computerChoice || game.playerNextPhase) return;
+    if (!game || (game.phase !== "player" && game.phase !== "manual") || computerShotFlash || game.playerNextPhase) return;
     if (game.phase === "player") {
       if (getShot(game.playerShots, target.x, target.y)) return;
-      setPlayerChoice({ ...target, gameId: game.id });
+      flashPlayerShot(target);
     }
     dispatch({ type: "player-fire", target });
   }
@@ -144,8 +95,8 @@ export function useGameController() {
 
   return {
     game,
-    computerChoice: computerChoice?.gameId === game?.id ? computerChoice : null,
-    playerChoice: playerChoice?.gameId === game?.id ? playerChoice : null,
+    computerShotFlash,
+    playerShotFlash,
     draggedShip,
     manualPlacementShipId: game?.manualPlacementShipId ?? null,
     beginNewBattle,

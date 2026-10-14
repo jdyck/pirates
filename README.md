@@ -33,13 +33,17 @@ Components are grouped by responsibility in `app/components`, with CSS Modules b
 - `battle/`: mode selection, battle status, and result overlays.
 - `pwa/`: service worker registration.
 
-Page-level hooks (`useGameController` and `useSceneLayout`) live in `app/hooks`. Pure game rules, selectors, geometry, and layout calculations live in `lib`. Import components directly from their owning folder.
+Page-level hooks live in `app/hooks`: `useGameController` exposes game commands and deployment dragging; `useBattleTiming` schedules CPU shots, shot flashes, and delayed turn handoffs; `useWatersSelection` owns manual board inspection; `useDialogFocus` handles the dialogs' keyboard focus; and `useSceneLayout` measures the viewport. Pure game rules, selectors, geometry, and layout calculations live in `lib`. Import components directly from their owning folder.
+
+`fleet/PlacementPanel.jsx` owns deployment controls. `fleet/FleetStatus.jsx` renders fleet status using passive `FleetShipRow` or interactive `ManualFleetShipRow` rows. Each panel has its own stylesheet, organized into base appearance, wide layouts, and narrow layouts.
 
 ## Styling and graphics
 
 Use Tailwind utilities for layout, spacing, and simple interface styling. Shared colors and fonts are defined in `app/globals.css`; `tailwind.config.mjs` exposes the `text-muted` and `font-display` utilities used by fleet headings. Tailwind stays on version 3 for iPadOS 15 compatibility. The existing global reset is retained; Tailwind Preflight is disabled.
 
-`app/page.jsx` composes `GameHeader`, `GameBoards`, `GamePanel`, and `BattleModeDialog`. `GamePanel` selects deployment controls or battle fleets and `BattleStatus`; `GameBoards` owns waters selection and the timed `BattleResult` overlay. Game rules and turn timing remain in `useGameController` and `lib`.
+`app/page.jsx` composes `GameHeader`, `GameBoards`, `GamePanel`, and `BattleModeDialog`. `GamePanel` selects deployment controls or battle fleets and `BattleStatus`; `GameBoards` uses `useWatersSelection` and renders the timed `BattleResult` overlay. Game rules remain in `lib`; turn timing lives in `useBattleTiming`.
+
+Battle boards take a named `interactionMode`: `view` for inspection, `fire` for CPU-mode targeting, `edit-shots` for cycling enemy miss/hit/clear marks, `record-incoming` for toggling called shots on your fleet, and `place-ship` for dragging a ship across enemy hit marks. `disabled` temporarily locks input, while `revealShips` controls visibility separately.
 
 The original scene images in `src/images/scenes` supply the backgrounds, wooden frames, water grids, and painted logo. Source artwork is grouped under `src/images` into `scenes`, `dialogs`, `buttons`, `ships`, `markers`, and `icons`; ship and counter names describe their cell counts, and mode/result artwork uses descriptive names. The app serves generated WebP artwork from matching folders in `src/optimized`; editable PNG originals stay in `src/images` and are not bundled. SVGs and their licenses stay with the source artwork. Browser, Apple touch, and PWA icons live in `public` and `public/icons`.
 
@@ -47,8 +51,15 @@ Run `npm run optimize:graphics` after changing or adding artwork. The script dis
 
 `lib/sceneLayout.js` chooses a composition using viewport width and height, then centers the complete game assembly while decorative scenery crops. `useSceneLayout` observes resizing, and `app/page.jsx` keeps the image and controls in the same coordinate system. The dual and sidebar boards stop growing at their separate `--dual-board-max-width` and `--sidebar-board-max-width` settings in `app/globals.css` (495px by default). Compact and stacked layouts fit the available space. Very short windows can scroll vertically to keep the game usable.
 
-Visual styles live beside their components in CSS Modules and follow `data-game-layout`. `app/page.module.css` contains the clipped viewport and measured percentage coordinates; `GameBoards.module.css` handles board visibility and switching; `GamePanel.module.css` positions the fleet controls; `BattleStatus.module.css` handles the expandable status strip; `BattleResult.module.css` handles result overlays. `Board.module.css` aligns interactive cells with the painted grids, `ShipSilhouette.module.css` covers SVG ship artwork, and fleet and deployment styles remain in `GameSidebar.module.css`. Keep effects and animations in the owning component's module, and use inline styles for calculated scene and ship coordinates.
+Visual styles live beside their components in CSS Modules and follow `data-game-layout`. `app/page.module.css` contains the clipped viewport and measured percentage coordinates; `GameBoards.module.css` handles board visibility and switching; `GamePanel.module.css` positions the fleet controls; `BattleStatus.module.css` handles the expandable status strip; `BattleResult.module.css` handles result overlays. `Board.module.css` aligns interactive cells with the painted grids, `ShipSilhouette.module.css` covers SVG ship artwork, and `FleetStatus.module.css` and `PlacementPanel.module.css` own fleet and deployment styling. Keep effects and animations in the owning component's module, and use inline styles for calculated scene and ship coordinates.
 
 See [dev-notes.md](dev-notes.md) for responsive breakpoints, dimensions, board switching, the status drawer, and the files that control them.
 
-Run `npm test` and `npm run build` to verify changes.
+Run `npm test` and `npm run build` to verify rules, assets, and production output. Browser regression tests run with:
+
+```sh
+npx playwright install chromium
+npm run test:ui
+```
+
+Playwright starts a development server on port 3000, or uses the existing one. The tests cover delayed turns and reset cancellation, waters selection, shot editing, ship placement, dialog focus and countdowns, and fleet appearance in all four layouts. Computed-style snapshots in `tests/ui/game.spec.mjs-snapshots` were recorded before the refactor. They include platform-specific font measurements; review any new platform baselines or intentional style changes before recording them with `npm run test:ui -- --update-snapshots`.

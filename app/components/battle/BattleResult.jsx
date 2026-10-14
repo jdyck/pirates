@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { useDialogFocus } from "../../hooks/useDialogFocus.js";
 import winBackground from "../../../src/optimized/dialogs/victory.webp";
 import winCloseBackground from "../../../src/optimized/buttons/victory-close.webp";
 import loseBackground from "../../../src/optimized/dialogs/defeat.webp";
@@ -13,7 +14,8 @@ const AUTO_CLOSE_MS = 5000;
 export function BattleResult({ phase, gameId }) {
   const [visible, setVisible] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(AUTO_CLOSE_MS / 1000);
-  const closeButtonRef = useRef(null);
+  const dialogRef = useRef(null);
+  const closeResult = useCallback(() => setVisible(false), []);
   const battleOver = phase === "victory" || phase === "defeat";
 
   useEffect(() => {
@@ -34,27 +36,13 @@ export function BattleResult({ phase, gameId }) {
     };
   }, [visible, battleOver, phase, gameId]);
 
-  useEffect(() => {
-    if (!visible || !battleOver) return undefined;
-    const previousFocus = document.activeElement;
-    closeButtonRef.current?.focus();
-
-    function handleKeyDown(event) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        setVisible(false);
-      } else if (event.key === "Tab") {
-        event.preventDefault();
-        closeButtonRef.current?.focus();
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      if (previousFocus instanceof HTMLElement) previousFocus.focus();
-    };
-  }, [visible, battleOver, phase, gameId]);
+  useDialogFocus({
+    open: visible && battleOver,
+    dialogRef,
+    onClose: closeResult,
+    resetKey: `${gameId}-${phase}`,
+    singleButton: true,
+  });
 
   if (!visible || !battleOver) return null;
 
@@ -70,6 +58,7 @@ export function BattleResult({ phase, gameId }) {
         aria-modal="true"
         className={styles["battle-result-popup"]}
         key={`${gameId}-${phase}`}
+        ref={dialogRef}
         role="alertdialog"
         style={{
           "--auto-close-duration": `${AUTO_CLOSE_MS}ms`,
@@ -91,8 +80,7 @@ export function BattleResult({ phase, gameId }) {
         </p>
         <button
           className={styles["battle-result-close"]}
-          onClick={() => setVisible(false)}
-          ref={closeButtonRef}
+          onClick={closeResult}
           type="button"
         >
           <img className={styles["battle-result-button-art"]} src={closeBackground.src} alt="" aria-hidden="true" />
