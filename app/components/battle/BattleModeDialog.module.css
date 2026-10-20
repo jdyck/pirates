@@ -11,6 +11,7 @@
 }
 
 .battle-mode-dialog {
+  --popup-scale: .8;
   position: relative;
   width: min(720px, 100%, calc((100svh - 32px) * 4 / 3));
   aspect-ratio: 4 / 3;

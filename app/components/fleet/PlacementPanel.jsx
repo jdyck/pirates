@@ -4,7 +4,7 @@ import styles from "./PlacementPanel.module.css";
 
 export function PlacementPanel({
   ships, placedShips, selectedShipId, orientation, onSelectShip, onRotate,
-  onRandomize, onStartBattle, canStartBattle, onDragStartShip, onDragEndShip,
+  onRandomize, onStartBattle, canStartBattle, onDragStartShip, shipDragHandlers,
 }) {
   const placedCount = placedShips.length;
 
@@ -33,11 +33,11 @@ export function PlacementPanel({
               aria-label={`${ship.name}${placed ? ", placed; drag or select to move" : ", ready to place; drag onto the board"}${selected ? ", selected" : ""}`}
               aria-pressed={selected}
               className={`${styles["fleet-row"]} ${styles["deployment-ship"]} ${selected ? styles["deployment-ship-selected"] : ""}`}
-              draggable
+              draggable={false}
               key={ship.id}
               style={{ "--fleet-counter-ratio": getFleetCounterRatio(ship) }}
-              onDragEnd={onDragEndShip}
-              onDragStart={(event) => onDragStartShip(
+              {...shipDragHandlers}
+              onPointerDown={(event) => onDragStartShip(
                 event,
                 ship.id,
                 0,

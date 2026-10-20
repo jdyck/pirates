@@ -1,5 +1,6 @@
 import { isShipSunk } from "../../../lib/boardGeometry.js";
 import { FleetShipRow, ManualFleetShipRow } from "./FleetShipRow.jsx";
+import { ManualBattleHelp } from "../battle/ManualBattleHelp.jsx";
 import { getFleetLayoutStyle } from "./fleetLayout.js";
 import styles from "./FleetStatus.module.css";
 
@@ -24,7 +25,7 @@ export function FleetStatus({
     >
       <div className={`text-muted font-display ${styles["fleet-heading"]}`}>
         <span>{label}</span>
-        {manualLostShips && <span className={styles["fleet-heading-hint"]}>(tap ship, then drag hits)</span>}
+        {manualLostShips && <ManualBattleHelp className={styles["fleet-help-button"]} />}
         <span className={styles["fleet-count"]} aria-label={`${remaining} of ${ships.length} ships remaining`}>
           {remaining} / {ships.length}
         </span>

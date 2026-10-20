@@ -1,5 +1,9 @@
 "use client";
 
+import { preload } from "react-dom";
+import hitArtwork from "../../../src/optimized/markers/hit.webp";
+import splashArtwork from "../../../src/optimized/markers/splash.webp";
+import missArtwork from "../../../src/optimized/markers/miss.webp";
 import { getManualPlacementPreview } from "../../../lib/boardPreviews.js";
 import { getBoardRows, getVisibleShips } from "../../../lib/boardView.js";
 import { Board, BoardGrid } from "./Board.jsx";
@@ -14,6 +18,9 @@ function BattleBoard({
   manualPlacementShip, onPlaceManualShip, revealShips = false,
   onFire, flashingCell,
 }) {
+  preload(hitArtwork.src, { as: "image", fetchPriority: "low" });
+  preload(splashArtwork.src, { as: "image", fetchPriority: "low" });
+  preload(missArtwork.src, { as: "image", fetchPriority: "low" });
   const isTarget = waters === "enemy";
   const placementShip = interactionMode === "place-ship" ? manualPlacementShip : null;
   const { manualDrag, manualPointerHandlers } = useManualShipPlacement({
@@ -31,9 +38,9 @@ function BattleBoard({
         manualPlacementActive={Boolean(placementShip)}
         frameHandlers={manualPointerHandlers}
       >
-        {visibleShips.map((ship) => <ShipSilhouette key={ship.id} ship={ship} />)}
+        {visibleShips.map((ship) => <ShipSilhouette key={ship.id} ship={ship} shots={shots} />)}
         {isTarget && preview.silhouetteShip && (
-          <ShipSilhouette ship={preview.silhouetteShip} />
+          <ShipSilhouette ship={preview.silhouetteShip} shots={shots} />
         )}
         <BoardGrid rows={rows} renderCell={(cell, className) => (
           <BattleCell

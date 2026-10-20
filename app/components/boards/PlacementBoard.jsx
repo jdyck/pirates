@@ -9,20 +9,26 @@ import { usePlacementInteractions } from "./usePlacementInteractions.js";
 
 export function PlacementBoard({
   ships, disabled, selectedShip, orientation, draggedShip, onPlace,
-  onDragStartShip, onDragEndShip, onDropShip, onSelectShip, onRotateShipEnd,
+  onDragStartShip, shipDragHandlers, onSelectShip, onRotateShipEnd,
 }) {
   const { hoveredCell, setHoveredCell } = usePlacementInteractions(draggedShip);
-  const preview = getPlacementPreview({ ships, selectedShip, orientation, draggedShip, hoveredCell });
+  const preview = getPlacementPreview({
+    ships, selectedShip, orientation, draggedShip,
+    hoveredCell: draggedShip ? draggedShip.hoveredCell : hoveredCell,
+  });
   const rows = getBoardRows({ ships, placement: true, preview });
 
   return (
     <div data-waters="your">
       <Board title="Your waters" variant="placement">
         {ships.map((ship) => (
-          <ShipSilhouette key={ship.id} ship={ship} />
+          <ShipSilhouette key={ship.id} ship={ship} isDragging={draggedShip?.shipId === ship.id} />
         ))}
         {preview.silhouetteShip && (
-          <ShipSilhouette ship={preview.silhouetteShip} />
+          <ShipSilhouette
+            ship={preview.silhouetteShip}
+            isUnplaced={!ships.some((ship) => ship.id === preview.silhouetteShip.id)}
+          />
         )}
         <BoardGrid rows={rows} renderCell={(cell, className) => (
           <PlacementCell
@@ -37,8 +43,7 @@ export function PlacementBoard({
             draggedShip={draggedShip}
             onPlace={onPlace}
             onDragStartShip={onDragStartShip}
-            onDragEndShip={onDragEndShip}
-            onDropShip={onDropShip}
+            shipDragHandlers={shipDragHandlers}
             onSelectShip={onSelectShip}
             onRotateShipEnd={onRotateShipEnd}
             onHoverCell={setHoveredCell}

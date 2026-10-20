@@ -28,16 +28,24 @@
   text-align: left;
 }
 
-.fleet-heading-hint {
+.fleet-help-button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 1.1em;
+  height: 1.1em;
   margin-left: auto;
-  text-align: right;
-  white-space: nowrap;
-  font-family: var(--sans);
-  font-size: clamp(11px, .65em, 13px);
-  font-weight: 400;
-  line-height: 1.2;
-  letter-spacing: 0;
+  padding: 0;
+  border: 1px solid #b57a36;
+  border-radius: 50%;
+  background: rgba(255, 234, 180, .65);
+  color: #683b10;
+  font: inherit;
+  cursor: pointer;
 }
+
+.fleet-help-button:hover { background: #f3ce80; border-color: #683b10; }
+.fleet-help-button:focus-visible { outline: 2px solid #683b10; outline-offset: 3px; }
 
 .fleet-count {
   display: none;
@@ -133,9 +141,6 @@
 
 :global([data-game-layout="dual"]) .fleet-heading > span:first-child,
 :global([data-game-layout="sidebar"]) .fleet-heading > span:first-child { white-space: nowrap; }
-:global([data-game-layout="dual"]) .fleet-heading-hint,
-:global([data-game-layout="sidebar"]) .fleet-heading-hint { min-width: 0; white-space: normal; }
-
 :global([data-game-layout="dual"]) .fleet-ships,
 :global([data-game-layout="sidebar"]) .fleet-ships {
   min-height: min-content;

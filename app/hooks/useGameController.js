@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useReducer, useRef, useState } from "react";
+import { useEffect, useReducer, useRef } from "react";
 import { createFleet, createGame, gameReducer } from "../../lib/game.js";
 import { useBattleTiming } from "./useBattleTiming.js";
 import { getShot } from "../../lib/boardGeometry.js";
+import { useShipPlacementDrag } from "./useShipPlacementDrag.js";
 
 export function useGameController() {
   const [game, dispatch] = useReducer(gameReducer, null);
-  const [draggedShip, setDraggedShip] = useState(null);
+  const { draggedShip, beginShipDrag, cancelShipDrag, shipDragHandlers } = useShipPlacementDrag({
+    enabled: game?.phase === "placement",
+    onDropShip: dropDraggedShip,
+  });
   const { computerShotFlash, playerShotFlash, flashPlayerShot, clearShotFlashes } = useBattleTiming(game, dispatch);
   const gameSequenceRef = useRef(0);
 
@@ -18,7 +22,7 @@ export function useGameController() {
 
   function beginNewBattle(mode) {
     clearShotFlashes();
-    setDraggedShip(null);
+    cancelShipDrag();
     gameSequenceRef.current += 1;
     dispatch({ type: "reset", game: createGame(mode, gameSequenceRef.current) });
   }
@@ -35,17 +39,6 @@ export function useGameController() {
     dispatch({ type: "rotate-placement" });
   }
 
-  function beginShipDrag(event, shipId, offset, orientation) {
-    if (!game || game.phase !== "placement") return;
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", shipId);
-    setDraggedShip({ shipId, offset, orientation });
-  }
-
-  function endShipDrag() {
-    setDraggedShip(null);
-  }
-
   function rotatePlacedShip(shipId, endpoint) {
     dispatch({ type: "rotate-ship-end", shipId, endpoint });
   }
@@ -54,18 +47,16 @@ export function useGameController() {
     dispatch({ type: "place-selected-ship", start });
   }
 
-  function dropDraggedShip(target) {
-    if (!draggedShip) return;
-    const start = draggedShip.orientation === "horizontal"
-      ? { x: target.x - draggedShip.offset, y: target.y }
-      : { x: target.x, y: target.y - draggedShip.offset };
+  function dropDraggedShip(ship, target) {
+    const start = ship.orientation === "horizontal"
+      ? { x: target.x - ship.offset, y: target.y }
+      : { x: target.x, y: target.y - ship.offset };
     dispatch({
       type: "drop-ship",
-      shipId: draggedShip.shipId,
+      shipId: ship.shipId,
       start,
-      orientation: draggedShip.orientation,
+      orientation: ship.orientation,
     });
-    setDraggedShip(null);
   }
 
   function randomizePlacement() {
@@ -104,10 +95,9 @@ export function useGameController() {
     selectShip,
     rotatePlacement,
     beginShipDrag,
-    endShipDrag,
+    shipDragHandlers,
     rotatePlacedShip,
     placeShipAt,
-    dropDraggedShip,
     randomizePlacement,
     playerFire,
     recordManualIncoming,

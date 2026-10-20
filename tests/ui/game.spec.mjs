@@ -12,6 +12,27 @@ async function chooseMode(page, mode = "vs Person") {
   await expect(page.getByRole("button", { name: "START BATTLE" })).toBeEnabled();
 }
 
+async function chooseKnownFleet(page) {
+  await page.goto("/");
+  await page.evaluate(() => {
+    const values = [0.9, 0, 0, 0.1, 0, 0.2, 0.9, 0.3, 0.2,
+      0.1, 0.7, 0.5, 0.9, 0.8, 0.8];
+    const original = Math.random;
+    Math.random = () => values.length ? values.shift() : original();
+    window.nativeDrags = 0;
+    document.addEventListener("dragstart", () => { window.nativeDrags += 1; });
+  });
+  await page.getByRole("button", { name: "vs Person", exact: true }).click();
+}
+
+async function dragShip(page, source, target) {
+  const start = await source.boundingBox();
+  const end = await target.boundingBox();
+  await page.mouse.move(start.x + start.width / 2, start.y + start.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(end.x + end.width / 2, end.y + end.height / 2, { steps: 8 });
+}
+
 async function freezeTime(page) {
   const now = new Date("2026-10-13T12:00:00Z");
   await page.clock.install({ time: now });
@@ -132,7 +153,39 @@ test("manual mode cycles marks, records incoming shots, and places a sunk ship b
   await expect(a1).toHaveAccessibleName("A1, hit, click to cycle or clear mark");
 });
 
-test("deployment selection, rotation, and HTML drag preserve placement controls", async ({ page }) => {
+test("hit markers animate only on a new hit and keep their timeline across board switches", async ({ page }) => {
+  await chooseMode(page);
+  await page.getByRole("button", { name: "START BATTLE" }).click();
+  const a1 = cell(enemyBoard(page), "A1");
+  const marker = a1.locator('img[class*="shot-hit"]');
+  await a1.click();
+  await a1.click();
+  await expect.poll(() => marker.evaluate((element) => element.getAnimations().length)).toBe(1);
+  const animation = await marker.evaluateHandle((element) => {
+    const current = element.getAnimations()[0];
+    current.pause();
+    current.currentTime = 350;
+    return current;
+  });
+  await yourTab(page).click();
+  await enemyTab(page).click();
+  expect(await marker.evaluate((element, current) => element.getAnimations().includes(current), animation)).toBe(true);
+  expect(await animation.evaluate((current) => current.currentTime)).toBe(350);
+  await animation.evaluate((current) => current.finish());
+  await expect(marker).toHaveCSS("transform", "none");
+  await yourTab(page).click();
+  await enemyTab(page).click();
+  expect(await marker.evaluate((element) => element.getAnimations().length)).toBe(0);
+
+  // Clearing and recording another hit should still animate it once.
+  await a1.click();
+  await a1.click();
+  await a1.click();
+  await expect.poll(() => marker.evaluate((element) => element.getAnimations().length)).toBe(1);
+  await animation.dispose();
+});
+
+test("deployment selection, rotation, and pointer drag preserve placement controls", async ({ page }) => {
   await chooseMode(page);
   await page.getByRole("button", { name: /^Sloop, placed/ }).click();
   await expect(page.getByRole("button", { name: "START BATTLE" })).toBeDisabled();
@@ -140,12 +193,100 @@ test("deployment selection, rotation, and HTML drag preserve placement controls"
   const emptyLabels = await yourBoard(page).getByRole("button", { name: /, place Sloop vertical$/ }).evaluateAll((buttons) => buttons.map((button) => button.getAttribute("aria-label").split(",")[0]));
   const coordinate = emptyLabels.find((name) => emptyLabels.includes(`${name[0]}${Number(name.slice(1)) + 1}`));
   const target = cell(yourBoard(page), coordinate);
-  const transfer = await page.evaluateHandle(() => new DataTransfer());
-  await page.getByRole("button", { name: /^Sloop, ready/ }).dispatchEvent("dragstart", { dataTransfer: transfer });
-  await target.dispatchEvent("dragover", { dataTransfer: transfer });
-  await target.dispatchEvent("drop", { dataTransfer: transfer });
+  await dragShip(page, page.getByRole("button", { name: /^Sloop, ready/ }), target);
+  await page.mouse.up();
   await expect(page.getByRole("button", { name: "START BATTLE" })).toBeEnabled();
+  await expect(target).toHaveAccessibleName(new RegExp(`${coordinate}, Sloop end`));
 });
+
+test("ship drags keep the grab offset, fade the original, and avoid native drag icons", async ({ page }) => {
+  await chooseKnownFleet(page);
+  const board = yourBoard(page);
+  const ships = board.locator('[class*="ship-silhouette"]');
+  const origin = board.locator('[class*="drag-origin"]');
+
+  await dragShip(page, cell(board, "C1"), cell(board, "C10"));
+  await expect(origin).toHaveCount(1);
+  await expect(origin).toHaveCSS("opacity", "0.4");
+  await expect(ships).toHaveCount(6);
+  await expect(ships.last()).toHaveCSS("opacity", "1");
+  // The middle of the five-cell ship stays under the pointer at C10.
+  await expect(ships.last()).toHaveCSS("grid-column-start", "2");
+  await expect(ships.last()).toHaveCSS("grid-row-start", "11");
+  await page.mouse.up();
+  await expect(origin).toHaveCount(0);
+  await expect(cell(board, "A10")).toHaveAccessibleName(/Galleon end/);
+  await expect(cell(board, "E10")).toHaveAccessibleName(/Galleon end/);
+  await expect(ships).toHaveCount(5);
+
+  await dragShip(page, cell(board, "A4"), cell(board, "J6"));
+  await expect(origin).toHaveCSS("opacity", "0.4");
+  await expect(ships.last()).toHaveCSS("grid-column-start", "11");
+  await expect(ships.last()).toHaveCSS("grid-row-start", "5");
+  await page.keyboard.press("Escape");
+  await page.mouse.up();
+  await expect(origin).toHaveCount(0);
+  await expect(cell(board, "A4")).toHaveAccessibleName(/Frigate/);
+  await expect(ships).toHaveCount(5);
+  expect(await page.evaluate(() => window.nativeDrags)).toBe(0);
+});
+
+test.describe("touch deployment", () => {
+  test.use({ hasTouch: true });
+
+  test("moves the whole ship without native dragging or an extra tap action", async ({ page }) => {
+    await chooseKnownFleet(page);
+    const board = yourBoard(page);
+    const start = await cell(board, "C1").boundingBox();
+    const end = await cell(board, "C10").boundingBox();
+    const session = await page.context().newCDPSession(page);
+    const touch = (type, box) => session.send("Input.dispatchTouchEvent", {
+      type,
+      touchPoints: box ? [{ x: box.x + box.width / 2, y: box.y + box.height / 2, id: 1 }] : [],
+    });
+    await touch("touchStart", start);
+    await touch("touchMove", end);
+    await expect(board.locator('[class*="drag-origin"]')).toHaveCSS("opacity", "0.4");
+    await touch("touchEnd");
+    await expect(board.locator('[class*="drag-origin"]')).toHaveCount(0);
+    await expect(cell(board, "A10")).toHaveAccessibleName(/Galleon end/);
+    await expect(cell(board, "E10")).toHaveAccessibleName(/Galleon end/);
+    await expect(page.getByRole("button", { name: "START BATTLE" })).toBeEnabled();
+    expect(await page.evaluate(() => window.nativeDrags)).toBe(0);
+    await session.detach();
+  });
+});
+
+for (const width of [1100, 390]) {
+  test(`manual battle help shows instructions and restores focus at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 844 });
+    await chooseMode(page);
+    await page.getByRole("button", { name: "START BATTLE" }).click();
+    const help = page.getByRole("button", { name: "How to mark enemy waters", exact: true });
+    await expect(help).toHaveText("?");
+    await expect(page.getByText("(tap ship, then drag hits)", { exact: true })).toHaveCount(0);
+    await help.click();
+    const dialog = page.getByRole("dialog", { name: "How to mark enemy waters" });
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText("Click a square in enemy waters once to mark a miss, twice to mark a hit, or a third time to clear it.", { exact: true })).toBeVisible();
+    await expect(dialog.getByText("When you sink an enemy ship, select it in the Enemy Fleet panel. Then drag across its hit markers in enemy waters to mark the ship’s position.", { exact: true })).toBeVisible();
+    const close = dialog.getByRole("button", { name: "Close", exact: true });
+    await expect(close).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(close).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(dialog).toHaveCount(0);
+    await expect(help).toBeFocused();
+    await help.click();
+    await page.locator('[class*="ManualBattleHelp"][class*="backdrop"]').click({ position: { x: 2, y: 2 } });
+    await expect(dialog).toHaveCount(0);
+    await expect(help).toBeFocused();
+    await help.click();
+    await close.click();
+    await expect(dialog).toHaveCount(0);
+    await expect(help).toBeFocused();
+  });
+}
 
 test("mode dialog traps focus, closes with Escape/backdrop, and restores the trigger", async ({ page }) => {
   await chooseMode(page);
@@ -173,11 +314,14 @@ for (const preview of ["win", "lose"]) {
     await page.goto(`/?preview=${preview}`);
     const close = page.getByRole("button", { name: "Close", exact: true });
     await expect(close).toBeFocused();
+    await expect(page.getByText("Closes in 10s")).toBeVisible();
     await page.keyboard.press("Tab");
     await expect(close).toBeFocused();
     await page.clock.runFor(2000);
-    await expect(page.getByText("Closes in 3s")).toBeVisible();
+    await expect(page.getByText("Closes in 8s")).toBeVisible();
     await page.clock.runFor(3000);
+    await expect(page.getByText("Closes in 5s")).toBeVisible();
+    await page.clock.runFor(5000);
     await expect(page.getByRole("alertdialog")).toHaveCount(0);
     await page.reload();
     await expect(close).toBeVisible();
@@ -212,7 +356,7 @@ for (const [layout, viewport] of Object.entries(layouts)) {
         const properties = ["display", "flex-direction", "flex-wrap", "flex-basis", "flex-grow", "gap", "grid-template-columns", "grid-template-areas", "align-items", "align-content", "justify-content", "justify-items", "width", "height", "min-height", "padding", "margin", "color", "background-color", "border", "border-radius", "font-family", "font-size", "font-weight", "line-height", "letter-spacing", "text-align"];
         return sections.map((section) => ({
           label: section.getAttribute("aria-label"),
-          elements: [section, ...section.querySelectorAll('[class*="fleet-heading"], [class*="fleet-ships"], [class*="fleet-row"], [class*="fleet-name"], [class*="battle-counter"], [class*="manual-ship-identity"], [class*="deployment-counter"], [class*="deployment-help"], [class*="deployment-ship-status"], [class*="deployment-count"], [class*="random-placement"], [class*="start-battle-button"], [class*="deployment-action-content"]')].map((element) => {
+          elements: [section, ...section.querySelectorAll('[class*="fleet-heading"], [class*="fleet-help-button"], [class*="fleet-ships"], [class*="fleet-row"], [class*="fleet-name"], [class*="battle-counter"], [class*="manual-ship-identity"], [class*="deployment-counter"], [class*="deployment-help"], [class*="deployment-ship-status"], [class*="deployment-count"], [class*="random-placement"], [class*="start-battle-button"], [class*="deployment-action-content"]')].map((element) => {
             const style = getComputedStyle(element);
             return Object.fromEntries(properties.map((property) => [property, style.getPropertyValue(property)]));
           }),

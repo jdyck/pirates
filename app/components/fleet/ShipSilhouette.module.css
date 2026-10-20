@@ -18,3 +18,12 @@
   width: 100%;
   height: 100%;
 }
+
+.drag-origin {
+  opacity: .4;
+}
+
+.unplaced-preview {
+  outline: 2px dashed var(--aqua-bright);
+  outline-offset: -1px;
+}

@@ -1,14 +1,26 @@
-import { Fragment } from "react";
+"use client";
+
+import { Fragment, useState } from "react";
 import { COLUMNS } from "../../../lib/gameConfig.js";
 import styles from "./Board.module.css";
 
 export function Board({ title, variant, manualPlacementActive = false, frameHandlers, children }) {
+  const [inputMethod, setInputMethod] = useState("keyboard");
+  const trackPointer = (event) => setInputMethod(event.pointerType);
   const classes = [styles["board-card"], styles[variant === "target" ? "target-card" : "home-card"]];
   if (variant === "placement") classes.push(styles["placement-card"]);
   if (manualPlacementActive) classes.push(styles["manual-placement-active"]);
 
   return (
-    <section className={classes.join(" ")} aria-label={title}>
+    <section
+      className={classes.join(" ")}
+      aria-label={title}
+      data-input-method={inputMethod}
+      onPointerOverCapture={trackPointer}
+      onPointerMoveCapture={trackPointer}
+      onPointerDownCapture={trackPointer}
+      onKeyDownCapture={() => setInputMethod("keyboard")}
+    >
       <div className={styles["board-card-head"]}>
         <h2>{title}</h2>
       </div>

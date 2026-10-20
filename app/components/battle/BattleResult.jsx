@@ -1,22 +1,31 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
+import { createPortal, preload } from "react-dom";
 import { useDialogFocus } from "../../hooks/useDialogFocus.js";
+import { usePopupPresence } from "../../hooks/usePopupPresence.js";
 import winBackground from "../../../src/optimized/dialogs/victory.webp";
 import winCloseBackground from "../../../src/optimized/buttons/victory-close.webp";
 import loseBackground from "../../../src/optimized/dialogs/defeat.webp";
 import loseCloseBackground from "../../../src/optimized/buttons/defeat-close.webp";
 import styles from "./BattleResult.module.css";
+import motion from "./PopupMotion.module.css";
 
-const AUTO_CLOSE_MS = 5000;
+const AUTO_CLOSE_MS = 10_000;
+const RESULT_ARTWORK = [winBackground, winCloseBackground, loseBackground, loseCloseBackground];
 
 export function BattleResult({ phase, gameId }) {
+  // This component is mounted during the battle, before the result is visible.
+  for (const artwork of RESULT_ARTWORK) {
+    preload(artwork.src, { as: "image", fetchPriority: "low" });
+  }
+
   const [visible, setVisible] = useState(false);
   const [secondsRemaining, setSecondsRemaining] = useState(AUTO_CLOSE_MS / 1000);
   const dialogRef = useRef(null);
   const closeResult = useCallback(() => setVisible(false), []);
   const battleOver = phase === "victory" || phase === "defeat";
+  const { present, backdropProps } = usePopupPresence(visible && battleOver);
 
   useEffect(() => {
     setVisible(battleOver);
@@ -37,26 +46,29 @@ export function BattleResult({ phase, gameId }) {
   }, [visible, battleOver, phase, gameId]);
 
   useDialogFocus({
-    open: visible && battleOver,
+    open: present,
     dialogRef,
     onClose: closeResult,
     resetKey: `${gameId}-${phase}`,
     singleButton: true,
   });
 
-  if (!visible || !battleOver) return null;
+  if (!present) return null;
 
   const victory = phase === "victory";
   const background = victory ? winBackground : loseBackground;
   const closeBackground = victory ? winCloseBackground : loseCloseBackground;
 
   return createPortal(
-    <div className={`${styles["battle-result-backdrop"]} ${phase === "defeat" ? styles["battle-result-defeat"] : ""}`}>
+    <div
+      className={`${styles["battle-result-backdrop"]} ${motion.backdrop} ${phase === "defeat" ? styles["battle-result-defeat"] : ""}`}
+      {...backdropProps}
+    >
       <div
         aria-labelledby="battle-result-title"
         aria-describedby="battle-result-message battle-result-countdown"
         aria-modal="true"
-        className={styles["battle-result-popup"]}
+        className={`${styles["battle-result-popup"]} ${motion.dialog}`}
         key={`${gameId}-${phase}`}
         ref={dialogRef}
         role="alertdialog"

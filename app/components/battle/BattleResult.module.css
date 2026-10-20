@@ -10,6 +10,7 @@
 }
 
 .battle-result-popup {
+  --popup-scale: .8;
   position: relative;
   isolation: isolate;
   container-type: inline-size;

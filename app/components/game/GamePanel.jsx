@@ -7,7 +7,7 @@ import styles from "./GamePanel.module.css";
 export function GamePanel({ controller, view }) {
   const {
     game, manualPlacementShipId, selectShip, rotatePlacement, randomizePlacement,
-    startBattle, beginShipDrag, endShipDrag, toggleManualLost,
+    startBattle, beginShipDrag, shipDragHandlers, toggleManualLost,
   } = controller;
   const { deploymentPhase, fleetComplete, manualMode, statusTitle, statusMessage } = view;
 
@@ -26,7 +26,7 @@ export function GamePanel({ controller, view }) {
           onStartBattle={startBattle}
           canStartBattle={fleetComplete}
           onDragStartShip={beginShipDrag}
-          onDragEndShip={endShipDrag}
+          shipDragHandlers={shipDragHandlers}
         />
       )}
       {!deploymentPhase && game && (

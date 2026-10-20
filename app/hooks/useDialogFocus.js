@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-// Both artwork dialogs contain buttons only. Keep Escape, focus wrapping, and
+// Game dialogs contain buttons only. Keep Escape, focus wrapping, and
 // trigger restoration here; each dialog owns its visibility and close policy.
 export function useDialogFocus({ open, dialogRef, onClose, resetKey, singleButton = false }) {
   useEffect(() => {

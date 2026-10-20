@@ -10,8 +10,8 @@ import styles from "./GameBoards.module.css";
 export function GameBoards({ controller, view }) {
   const {
     game, computerShotFlash, playerShotFlash, draggedShip, manualPlacementShipId,
-    placeShipAt, beginShipDrag, endShipDrag,
-    dropDraggedShip, selectShip, rotatePlacedShip, playerFire,
+    placeShipAt, beginShipDrag, shipDragHandlers,
+    selectShip, rotatePlacedShip, playerFire,
     placeManualEnemyShipAt, recordManualIncoming,
   } = controller;
   const { phase, manualMode, deploymentPhase, playerTurn, selectedShip } = view;
@@ -65,8 +65,7 @@ export function GameBoards({ controller, view }) {
               selectedShip={selectedShip}
               draggedShip={draggedShip}
               onDragStartShip={beginShipDrag}
-              onDragEndShip={endShipDrag}
-              onDropShip={dropDraggedShip}
+              shipDragHandlers={shipDragHandlers}
               onSelectShip={selectShip}
               onRotateShipEnd={rotatePlacedShip}
               ships={game?.playerShips ?? []}
